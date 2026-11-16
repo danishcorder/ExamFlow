@@ -14,7 +14,15 @@ export default defineConfig(({ command }) => {
       tanstackStart({
         server: { entry: 'server' },
       }),
-      ...(command === 'build' ? [nitro({ preset: 'node-server' })] : []),
+      ...(command === 'build'
+        ? [
+            nitro({
+              // Vercel needs Nitro's Build Output API instead of the Node server bundle.
+              // Keep node-server as the default for local/self-hosted production builds.
+              preset: process.env.NITRO_PRESET || (process.env.VERCEL ? 'vercel' : 'node-server'),
+            }),
+          ]
+        : []),
       viteReact(),
     ],
     resolve: {
