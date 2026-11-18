@@ -1,14 +1,12 @@
-import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Building, CheckCircle2, CreditCard, Shield, Zap } from 'lucide-react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatCard } from './stat-card';
 import { EmptyState, ErrorState, LoadingState } from './states';
 import { StatusPill } from './status-pill';
 import { useAuth } from '@/lib/auth';
-import { getInstitutionSubscriptionFn, updateInstitutionSubscriptionPlanFn } from '@/lib/saas.functions';
+import { getInstitutionSubscriptionFn } from '@/lib/saas.functions';
 import type { SubscriptionPlanTier } from '@/lib/saas.server';
 
 type SaasSubscriptionSettingsProps = {
@@ -17,29 +15,11 @@ type SaasSubscriptionSettingsProps = {
 
 export function SaasSubscriptionSettings({ institutionId }: SaasSubscriptionSettingsProps) {
   const { authHeaders } = useAuth();
-  const queryClient = useQueryClient();
-  const [updatingPlan, setUpdatingPlan] = useState<SubscriptionPlanTier | null>(null);
 
   const subQuery = useQuery({
     queryKey: ['institution-subscription', institutionId],
     queryFn: async () => getInstitutionSubscriptionFn({ data: { institutionId }, headers: authHeaders() }),
   });
-
-  async function handleUpgrade(tier: SubscriptionPlanTier) {
-    setUpdatingPlan(tier);
-    try {
-      await updateInstitutionSubscriptionPlanFn({
-        data: { institutionId, planTier: tier },
-        headers: authHeaders(),
-      });
-      toast.success(`Successfully upgraded to ${tier.toUpperCase()} plan`);
-      await queryClient.invalidateQueries({ queryKey: ['institution-subscription', institutionId] });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update plan');
-    } finally {
-      setUpdatingPlan(null);
-    }
-  }
 
   const sub = subQuery.data;
 
@@ -83,7 +63,7 @@ export function SaasSubscriptionSettings({ institutionId }: SaasSubscriptionSett
         <CardHeader>
           <CardTitle className="text-base">Subscription Plans & Limits</CardTitle>
           <CardDescription>
-            Manage your institution quota, tier entitlements, and billing cycles.
+            Plan details are informational until billing and verified subscription provisioning are configured.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -124,10 +104,9 @@ export function SaasSubscriptionSettings({ institutionId }: SaasSubscriptionSett
                       size="sm"
                       variant={isCurrent ? 'outline' : 'default'}
                       className="w-full"
-                      disabled={isCurrent || updatingPlan === p.tier}
-                      onClick={() => void handleUpgrade(p.tier)}
+                      disabled
                     >
-                      {isCurrent ? 'Current Plan' : updatingPlan === p.tier ? 'Updating...' : 'Select Plan'}
+                      {isCurrent ? 'Current Plan' : 'Billing setup required'}
                     </Button>
                   </div>
                 </div>

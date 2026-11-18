@@ -32,6 +32,7 @@ export const recordProctoringEventFn = createServerFn({ method: 'POST' })
   .handler(async ({ context, data }) =>
     recordProctoringEvent(
       context.supabase,
+      context.userId,
       data.institutionId,
       data.attemptId,
       data.studentId,

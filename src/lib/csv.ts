@@ -135,6 +135,30 @@ export function parseCsvMatrix(raw: string): string[][] {
   return rows.filter((r) => r.some((cell) => cell.trim().length > 0));
 }
 
+/** Serialize rows as spreadsheet-safe CSV; text cells that could be formulas are escaped. */
+export function serializeCsv(headers: string[], rows: unknown[][]): string {
+  const formatCell = (value: unknown): string => {
+    let text = value == null ? '' : String(value);
+    if (typeof value === 'string' && /^[\u0000-\u0020]*[=+@\-]/.test(value)) {
+      text = `'${text}`;
+    }
+    return `"${text.replaceAll('"', '""')}"`;
+  };
+  const content = [headers, ...rows].map((row) => row.map(formatCell).join(',')).join('\r\n');
+  return `\uFEFF${content}`;
+}
+
+/** Download rows as spreadsheet-safe UTF-8 CSV. */
+export function downloadCsv(filename: string, headers: string[], rows: unknown[][]): void {
+  const blob = new Blob([serializeCsv(headers, rows)], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function normalizeHeader(header: string): string {
   return header
     .trim()

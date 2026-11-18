@@ -92,31 +92,8 @@ export async function updateInstitutionSubscriptionPlan(
   if (isSuperAdmin && !membership) {
     throw new AuthorizationError('Institution Admin access required to update subscription', 403);
   }
-
-  const limits: Record<SubscriptionPlanTier, { exams: number; students: number; teachers: number }> = {
-    free: { exams: 5, students: 100, teachers: 10 },
-    starter: { exams: 25, students: 500, teachers: 25 },
-    professional: { exams: 100, students: 2500, teachers: 100 },
-    enterprise: { exams: 9999, students: 99999, teachers: 9999 },
-  };
-
-  const lim = limits[planTier];
-
-  const { error } = await (supabase as any).from('institution_subscriptions').upsert(
-    {
-      institution_id: institutionId,
-      plan_tier: planTier,
-      status: 'active',
-      max_active_exams: lim.exams,
-      max_students: lim.students,
-      max_teachers: lim.teachers,
-      current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'institution_id' },
-  );
-
-  if (error) throw new Error(error.message);
-
-  return getInstitutionSubscription(supabase, userId, institutionId);
+  // There is no billing provider or verified payment webhook in this project.
+  // Never allow a client request to grant paid entitlements.
+  void planTier;
+  throw new Error('Plan changes are unavailable until subscription billing is configured.');
 }

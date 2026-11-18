@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { Award, CheckCircle2, FileText, XCircle } from 'lucide-react';
+import { Award, CheckCircle2, Download, FileText, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { EmptyState, ErrorState, LoadingState } from './states';
@@ -7,6 +8,7 @@ import { StatusPill } from './status-pill';
 import { useAuth } from '@/lib/auth';
 import { getStudentResultReportFn } from '@/lib/grading.functions';
 import type { StudentResultReport } from '@/lib/grading.shared';
+import { downloadCsv } from '@/lib/csv';
 
 type StudentResultReportCardProps = {
   institutionId: string;
@@ -44,11 +46,17 @@ export function StudentResultReportCard({ institutionId, examId }: StudentResult
     );
   }
 
+  const downloadReport = () => downloadCsv(
+    `examflow-result-${report.examId}.csv`,
+    ['Exam', 'Attempt ID', 'Submitted at', 'Result status', 'Awarded marks', 'Maximum marks', 'Percentage', 'Passed'],
+    [[report.examTitle, report.attemptId, report.submittedAt, report.status, report.totalAwardedMarks, report.maxPossibleMarks, report.percentage, report.isPassing ? 'Yes' : 'No']],
+  );
+
   return (
     <div className="space-y-6">
       <Card className="shadow-none">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <CardTitle className="text-xl">{report.examTitle}</CardTitle>
               <CardDescription>
@@ -59,6 +67,11 @@ export function StudentResultReportCard({ institutionId, examId }: StudentResult
             <StatusPill tone={report.isPassing ? 'success' : 'danger'}>
               {report.isPassing ? 'Passed' : 'Failed'}
             </StatusPill>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={downloadReport}>
+              <Download className="h-4 w-4" /> Download result CSV
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">

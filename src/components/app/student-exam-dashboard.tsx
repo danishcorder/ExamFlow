@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRight,
+  ArrowLeft,
   CalendarClock,
   CheckCircle2,
   Clock,
@@ -29,6 +30,7 @@ import type {
 import { fetchStudentAssignedExamsFromSupabase } from '@/lib/student-exam-dashboard';
 import { StatCard } from './stat-card';
 import { EmptyState, ErrorState, LoadingState } from './states';
+import { StudentResultReportCard } from './student-result-report-card';
 
 type FilterTab = 'all' | StudentExamBucket;
 
@@ -121,6 +123,7 @@ export function StudentExamDashboard({
   const { user, activeInstitutionId } = useAuth();
   const [tab, setTab] = useState<FilterTab>('all');
   const [search, setSearch] = useState('');
+  const [selectedReportExamId, setSelectedReportExamId] = useState<string | null>(null);
   const client = supabaseClient ?? supabase;
 
   const query = useQuery({
@@ -185,6 +188,17 @@ export function StudentExamDashboard({
 
   if (!data) {
     return null;
+  }
+
+  if (selectedReportExamId && activeInstitutionId) {
+    return (
+      <div className="space-y-5">
+        <Button variant="ghost" size="sm" onClick={() => setSelectedReportExamId(null)}>
+          <ArrowLeft className="h-4 w-4" /> Back to exams
+        </Button>
+        <StudentResultReportCard institutionId={activeInstitutionId} examId={selectedReportExamId} />
+      </div>
+    );
   }
 
   return (
@@ -370,16 +384,17 @@ export function StudentExamDashboard({
                     </div>
 
                     <div className="flex shrink-0 items-center gap-2">
-                      <Button asChild variant={buttonVariant} size="sm">
-                        <Link
-                          to="/app/exam-session/$examId"
-                          params={{ examId: item.examId }}
-                          className="whitespace-nowrap"
-                        >
-                          {actionLabel}
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
-                      </Button>
+                      {item.attempt && item.bucket === 'completed' ? (
+                        <Button variant="outline" size="sm" onClick={() => setSelectedReportExamId(item.examId)}>
+                          View result <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button asChild variant={buttonVariant} size="sm">
+                          <Link to="/app/exam-session/$examId" params={{ examId: item.examId }} className="whitespace-nowrap">
+                            {actionLabel}<ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );

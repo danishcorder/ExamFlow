@@ -101,8 +101,8 @@ function Landing() {
           <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1.03fr_.97fr] lg:gap-10 lg:py-24 xl:py-28">
             <div className="relative z-10">
               <span className="hero-kicker"><Sparkles className="h-4 w-4" /> A complete examination workspace</span>
-              <h1 className="mt-7 max-w-3xl font-display text-[clamp(3rem,6.2vw,5.4rem)] font-medium leading-[.99] tracking-[-.045em] text-white">Run exams with <span className="text-gold">integrity</span> and confidence.</h1>
-              <p className="mt-6 max-w-xl text-base leading-8 text-white/70 sm:text-lg">From question authoring to published results, bring your institution’s examination workflow into one secure, considered space.</p>
+              <h1 className="mt-7 max-w-3xl font-sans text-[clamp(3rem,6.2vw,5.1rem)] font-semibold leading-[1.02] tracking-[-.055em] text-white">Exams, handled with <span className="text-gold">care</span> from start to finish.</h1>
+              <p className="mt-6 max-w-xl text-base leading-8 text-white/70 sm:text-lg">Give every step of assessment a clear place: from preparing questions to reviewing work and releasing results.</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg" className="h-12 bg-gold px-6 text-navy hover:bg-gold-light"><Link to="/auth/register">Get started free <ArrowRight className="h-4 w-4" /></Link></Button>
                 <Button asChild size="lg" variant="outline" className="h-12 border-white/35 bg-white/5 px-6 text-white hover:bg-white/10 hover:text-white"><a href="#features">Explore the platform</a></Button>

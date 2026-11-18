@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Building2,
   CheckCircle2,
+  Download,
   MailPlus,
   ShieldCheck,
   Users,
@@ -17,6 +18,7 @@ import { RoleGuard } from './role-guard';
 import { useAuth } from '@/lib/auth';
 import { getInstitutionWorkspaceFn } from '@/lib/workspace.functions';
 import { INSTITUTION_ROLE_LABELS, ROLES, type RoleKey } from '@/lib/roles';
+import { downloadCsv } from '@/lib/csv';
 
 export function RoleDashboard({ role }: { role: Exclude<RoleKey, 'super-admin'> }) {
   const { user, activeInstitutionId, activeMembership, authHeaders, workspace } = useAuth();
@@ -153,9 +155,23 @@ export function RoleDashboard({ role }: { role: Exclude<RoleKey, 'super-admin'> 
               </Card>
 
               <Card className="shadow-none">
-                <CardHeader>
-                  <CardTitle className="text-base">Recent security & membership activity</CardTitle>
-                  <CardDescription>Immutable institution audit trail.</CardDescription>
+                <CardHeader className="flex flex-row items-start justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-base">Recent security & membership activity</CardTitle>
+                    <CardDescription>Most recent 30 institution audit records.</CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={data.auditLogs.length === 0}
+                    onClick={() => downloadCsv(
+                      `examflow-${data.institution.slug}-audit.csv`,
+                      ['Timestamp', 'Actor user ID', 'Action', 'Target type', 'Target ID', 'Details'],
+                      data.auditLogs.map((log) => [log.created_at, log.actor_user_id, log.action, log.target_type, log.target_id, JSON.stringify(log.metadata)]),
+                    )}
+                  >
+                    <Download className="h-4 w-4" /> Export
+                  </Button>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {data.auditLogs.slice(0, 5).map((log) => (

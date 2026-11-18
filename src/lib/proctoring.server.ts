@@ -1,5 +1,6 @@
 import type { AuthedSupabase } from './workspace.server';
 import { verifyInstitutionAccess, AuthorizationError } from './workspace.server';
+import { resolveStudentIdentity } from './exam-engine.server';
 import type {
   AttemptReviewStatus,
   InvigilatorDashboardAttemptRow,
@@ -12,6 +13,7 @@ export * from './proctoring.shared';
 
 export async function recordProctoringEvent(
   supabase: AuthedSupabase,
+  userId: string,
   institutionId: string,
   attemptId: string,
   studentId: string,
@@ -19,6 +21,22 @@ export async function recordProctoringEvent(
   severity: ProctoringSeverity,
   details: Record<string, unknown> = {},
 ): Promise<void> {
+  const identity = await resolveStudentIdentity(supabase, userId, institutionId);
+  if (identity.studentId !== studentId) {
+    throw new AuthorizationError('You can only report events for your own student record', 403);
+  }
+
+  const { data: attempt, error: attemptError } = await supabase
+    .from('exam_attempts')
+    .select('id, student_id, status')
+    .eq('id', attemptId)
+    .eq('institution_id', institutionId)
+    .maybeSingle();
+  if (attemptError) throw new Error(attemptError.message);
+  if (!attempt || attempt.student_id !== studentId || attempt.status !== 'in_progress') {
+    throw new AuthorizationError('Proctoring events require your own active exam attempt', 403);
+  }
+
   const { error } = await (supabase as any).from('exam_proctoring_events').insert({
     institution_id: institutionId,
     attempt_id: attemptId,

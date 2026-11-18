@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Award,
   CheckCircle2,
+  Download,
   FileCheck2,
   FileText,
   HelpCircle,
@@ -35,6 +36,7 @@ import {
   saveManualQuestionGradeFn,
 } from '@/lib/grading.functions';
 import type { TeacherAttemptGradingDetail, TeacherAttemptQuestionDetail } from '@/lib/grading.shared';
+import { downloadCsv } from '@/lib/csv';
 
 type SubmissionFilterTab = 'all' | 'submitted' | 'graded' | 'published';
 
@@ -119,6 +121,24 @@ export function TeacherGradingDashboard({ institutionId, examId, onBack }: Teach
       return true;
     });
   }, [data, filterTab, searchQuery]);
+
+  function exportFilteredResults() {
+    downloadCsv(
+      `examflow-${examId}-results.csv`,
+      ['Student code', 'Student name', 'Email', 'Attempt status', 'Grade status', 'Awarded marks', 'Maximum marks', 'Percentage', 'Passed'],
+      filteredSubmissions.map((row) => [
+        row.studentCode,
+        row.studentFullName,
+        row.studentEmail,
+        row.status,
+        row.gradeStatus,
+        row.totalAwardedMarks,
+        row.maxPossibleMarks,
+        row.percentage,
+        row.isPassing ? 'Yes' : 'No',
+      ]),
+    );
+  }
 
   async function handlePublishAll() {
     setIsPublishingAll(true);
@@ -315,6 +335,9 @@ export function TeacherGradingDashboard({ institutionId, examId, onBack }: Teach
 
               {/* Search and Filters */}
               <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" onClick={exportFilteredResults} disabled={filteredSubmissions.length === 0}>
+                  <Download className="h-4 w-4" /> Export filtered results
+                </Button>
                 <div className="relative w-48 sm:w-64">
                   <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                   <Input

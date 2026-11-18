@@ -905,6 +905,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
           {/* Autosave & Offline Indicator */}
           <div
             aria-live="polite"
+            aria-atomic="true"
             className={cn(
               'flex items-center gap-1.5 text-xs font-medium',
               syncState === 'offline' || !isOnline
@@ -976,6 +977,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
           <div
             role="timer"
             aria-label="Time remaining"
+            aria-live="off"
             className={cn(
               'flex items-center gap-2 rounded-md border px-3 py-1.5 font-mono text-sm font-semibold tabular-nums',
               isCriticalTime

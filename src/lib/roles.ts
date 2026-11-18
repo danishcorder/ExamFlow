@@ -11,7 +11,6 @@ import {
   BookOpen,
   Award,
   MonitorPlay,
-  AlertTriangle,
   Settings,
   BarChart3,
   ShieldCheck,
@@ -92,8 +91,7 @@ export const ROLES: Record<RoleKey, { label: string; short: string; path: string
     path: '/app/invigilator',
     nav: [
       { label: 'Overview', icon: LayoutDashboard, to: '/app/invigilator' },
-      { label: 'Live sessions', icon: MonitorPlay, soon: true },
-      { label: 'Incidents', icon: AlertTriangle, soon: true },
+      { label: 'Live sessions & incidents', icon: MonitorPlay, to: '/app/invigilator' },
     ],
   },
 };
