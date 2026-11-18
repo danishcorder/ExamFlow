@@ -7,14 +7,12 @@ import {
   LogOut,
   Menu,
   PlusCircle,
-  Search,
   Settings,
   ShieldCheck,
   User,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -131,7 +129,7 @@ function SidebarBody({
         : 'Onboarding';
 
   return (
-    <div className="flex h-full flex-col bg-sidebar">
+    <div className="workspace-sidebar flex h-full flex-col bg-sidebar">
       <div className="flex h-16 items-center px-5">
         <Brand inverted />
       </div>
@@ -158,6 +156,9 @@ function SidebarBody({
             onNavigate={onNavigate}
           />
         ))}
+      </div>
+      <div className="flex items-center gap-2 border-t border-sidebar-border px-5 py-3 text-[10px] font-semibold uppercase tracking-[.12em] text-sidebar-foreground/50">
+        <ShieldCheck className="h-3.5 w-3.5 text-gold" /> Secure workspace
       </div>
     </div>
   );
@@ -265,6 +266,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pendingInviteCount = workspace?.pendingInvitations.length ?? 0;
   const memberships = workspace?.memberships ?? [];
   const isSuperAdmin = workspace?.isSuperAdmin ?? false;
+  const activeNavItem = role
+    ? ROLES[role].nav.find((item) => item.to && (pathname === item.to || pathname.startsWith(`${item.to}/`)))
+    : undefined;
+  const pageLabel = pathname.startsWith('/app/exam-session')
+    ? 'Examination session'
+    : activeNavItem?.label ?? (isSuperAdmin ? 'Platform overview' : 'Institution setup');
 
   const switcherValue =
     pathname.startsWith('/app/super-admin') && isSuperAdmin
@@ -290,8 +297,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const redirectTarget = `${pathname}${currentSearch}`;
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 lg:block">
+    <div className="workspace-canvas min-h-screen">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 lg:block xl:w-[272px]">
         <SidebarBody
           role={role}
           pendingInviteCount={pendingInviteCount}
@@ -299,7 +306,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         />
       </aside>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="w-64 border-0 p-0">
+        <SheetContent side="left" className="workspace-sidebar w-64 border-0 p-0">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <SidebarBody
             role={role}
@@ -309,8 +316,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           />
         </SheetContent>
       </Sheet>
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur sm:px-6">
+      <div className="lg:pl-64 xl:pl-[272px]">
+        <header className="workspace-topbar sticky top-0 z-20 flex h-16 items-center gap-3 bg-background/95 px-4 backdrop-blur sm:px-6">
           <Button
             variant="ghost"
             size="icon"
@@ -320,13 +327,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <div className="relative hidden max-w-sm flex-1 md:block">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search (available in a later phase)"
-              disabled
-              className="pl-9"
-            />
+          <div className="hidden min-w-0 flex-1 items-center gap-3 md:flex">
+            <span className="text-xs font-semibold text-muted-foreground">Workspace</span>
+            <span className="h-4 w-px bg-border" />
+            <span className="truncate text-sm font-semibold text-navy">{pageLabel}</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
             {user && (memberships.length > 0 || isSuperAdmin) && (
@@ -354,6 +358,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Button
               variant="ghost"
               size="icon"
+              className="rounded-xl border border-transparent hover:border-gold/35 hover:bg-gold/10"
               aria-label="Invitations and notifications"
               onClick={() => {
                 if (pendingInviteCount > 0) {
@@ -370,7 +375,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <ProfileMenu />
           </div>
         </header>
-        <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+        <main className="mx-auto max-w-[1500px] space-y-7 p-4 sm:p-6 lg:p-8 xl:p-10">
           {loading ? (
             <LoadingState label="Checking session…" />
           ) : !user ? (

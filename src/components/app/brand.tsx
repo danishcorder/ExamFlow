@@ -4,11 +4,14 @@ import { cn } from "@/lib/utils";
 
 export function Brand({ className, inverted }: { className?: string; inverted?: boolean }) {
   return (
-    <Link to="/" className={cn("flex items-center gap-2 font-semibold", className)}>
-      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-        <GraduationCap className="h-4 w-4" />
+    <Link to="/" aria-label="ExamFlow home" className={cn("group inline-flex items-center gap-2.5", className)}>
+      <span className="brand-mark">
+        <GraduationCap className="h-5 w-5" strokeWidth={2.2} />
       </span>
-      <span className={cn("font-display text-xl tracking-tight", inverted ? "text-sidebar-accent-foreground" : "text-foreground")}>ExamFlow</span>
+      <span className="flex flex-col leading-none">
+        <span className={cn("font-display text-[1.3rem] font-semibold tracking-tight", inverted ? "text-white" : "text-navy")}>Exam<span className={inverted ? "text-gold" : "text-gold-dark"}>Flow</span></span>
+        <span className={cn("mt-1.5 text-[9px] font-bold uppercase tracking-[.23em]", inverted ? "text-white/60" : "text-muted-foreground")}>Examination portal</span>
+      </span>
     </Link>
   );
 }

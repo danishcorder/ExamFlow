@@ -6,13 +6,13 @@ import { cn } from "@/lib/utils";
 export function StatCard({ label, value, delta, icon: Icon, hint }: { label: string; value: string; delta?: number; icon: LucideIcon; hint?: string }) {
   const up = (delta ?? 0) >= 0;
   return (
-    <Card className="shadow-none">
-      <CardContent className="p-5">
+    <Card className="stat-card overflow-hidden border-border/80 bg-card shadow-sm transition-shadow hover:shadow-elegant">
+      <CardContent className="p-5 sm:p-6">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground"><Icon className="h-4 w-4" /></span>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-gold/30 bg-gold/10 text-navy"><Icon className="h-[18px] w-[18px]" /></span>
         </div>
-        <p className="mt-3 text-2xl font-semibold tracking-tight">{value}</p>
+        <p className="mt-4 text-2xl font-bold tracking-tight text-navy">{value}</p>
         <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
           {delta !== undefined && (
             <span className={cn("inline-flex items-center gap-0.5 font-medium", up ? "text-success" : "text-destructive")}>
