@@ -19,7 +19,7 @@ export default defineConfig(({ command }) => {
             nitro({
               // Vercel needs Nitro's Build Output API instead of the Node server bundle.
               // Keep node-server as the default for local/self-hosted production builds.
-              preset: process.env.NITRO_PRESET || (process.env.VERCEL ? 'vercel' : 'node-server'),
+              preset: process.env['NITRO_PRESET'] || (process.env['VERCEL'] ? 'vercel' : 'node-server'),
             }),
           ]
         : []),
