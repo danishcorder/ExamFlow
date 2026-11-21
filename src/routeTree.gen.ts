@@ -16,12 +16,14 @@ import { Route as AppAcademicsRouteImport } from './routes/app/academics'
 import { Route as AppAssignmentsRouteImport } from './routes/app/assignments'
 import { Route as AppAuditLogRouteImport } from './routes/app/audit-log'
 import { Route as AppExamsRouteImport } from './routes/app/exams'
+import { Route as AppGradingQueueRouteImport } from './routes/app/grading-queue'
 import { Route as AppInstitutionRouteImport } from './routes/app/institution'
 import { Route as AppInvigilatorRouteImport } from './routes/app/invigilator'
 import { Route as AppInvitationsRouteImport } from './routes/app/invitations'
 import { Route as AppMembersRouteImport } from './routes/app/members'
 import { Route as AppOnboardingRouteImport } from './routes/app/onboarding'
 import { Route as AppQuestionBankRouteImport } from './routes/app/question-bank'
+import { Route as AppReportsRouteImport } from './routes/app/reports'
 import { Route as AppSettingsRouteImport } from './routes/app/settings'
 import { Route as AppStudentRouteImport } from './routes/app/student'
 import { Route as AppStudentsRouteImport } from './routes/app/students'
@@ -69,6 +71,11 @@ const AppExamsRoute = AppExamsRouteImport.update({
   path: '/exams',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppGradingQueueRoute = AppGradingQueueRouteImport.update({
+  id: '/grading-queue',
+  path: '/grading-queue',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppInstitutionRoute = AppInstitutionRouteImport.update({
   id: '/institution',
   path: '/institution',
@@ -97,6 +104,11 @@ const AppOnboardingRoute = AppOnboardingRouteImport.update({
 const AppQuestionBankRoute = AppQuestionBankRouteImport.update({
   id: '/question-bank',
   path: '/question-bank',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
@@ -163,12 +175,14 @@ export interface FileRoutesByFullPath {
   '/app/assignments': typeof AppAssignmentsRoute
   '/app/audit-log': typeof AppAuditLogRoute
   '/app/exams': typeof AppExamsRoute
+  '/app/grading-queue': typeof AppGradingQueueRoute
   '/app/institution': typeof AppInstitutionRoute
   '/app/invigilator': typeof AppInvigilatorRoute
   '/app/invitations': typeof AppInvitationsRoute
   '/app/members': typeof AppMembersRoute
   '/app/onboarding': typeof AppOnboardingRoute
   '/app/question-bank': typeof AppQuestionBankRoute
+  '/app/reports': typeof AppReportsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/student': typeof AppStudentRoute
   '/app/students': typeof AppStudentsRoute
@@ -189,12 +203,14 @@ export interface FileRoutesByTo {
   '/app/assignments': typeof AppAssignmentsRoute
   '/app/audit-log': typeof AppAuditLogRoute
   '/app/exams': typeof AppExamsRoute
+  '/app/grading-queue': typeof AppGradingQueueRoute
   '/app/institution': typeof AppInstitutionRoute
   '/app/invigilator': typeof AppInvigilatorRoute
   '/app/invitations': typeof AppInvitationsRoute
   '/app/members': typeof AppMembersRoute
   '/app/onboarding': typeof AppOnboardingRoute
   '/app/question-bank': typeof AppQuestionBankRoute
+  '/app/reports': typeof AppReportsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/student': typeof AppStudentRoute
   '/app/students': typeof AppStudentsRoute
@@ -216,12 +232,14 @@ export interface FileRoutesById {
   '/app/assignments': typeof AppAssignmentsRoute
   '/app/audit-log': typeof AppAuditLogRoute
   '/app/exams': typeof AppExamsRoute
+  '/app/grading-queue': typeof AppGradingQueueRoute
   '/app/institution': typeof AppInstitutionRoute
   '/app/invigilator': typeof AppInvigilatorRoute
   '/app/invitations': typeof AppInvitationsRoute
   '/app/members': typeof AppMembersRoute
   '/app/onboarding': typeof AppOnboardingRoute
   '/app/question-bank': typeof AppQuestionBankRoute
+  '/app/reports': typeof AppReportsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/student': typeof AppStudentRoute
   '/app/students': typeof AppStudentsRoute
@@ -244,12 +262,14 @@ export interface FileRouteTypes {
     | '/app/assignments'
     | '/app/audit-log'
     | '/app/exams'
+    | '/app/grading-queue'
     | '/app/institution'
     | '/app/invigilator'
     | '/app/invitations'
     | '/app/members'
     | '/app/onboarding'
     | '/app/question-bank'
+    | '/app/reports'
     | '/app/settings'
     | '/app/student'
     | '/app/students'
@@ -270,12 +290,14 @@ export interface FileRouteTypes {
     | '/app/assignments'
     | '/app/audit-log'
     | '/app/exams'
+    | '/app/grading-queue'
     | '/app/institution'
     | '/app/invigilator'
     | '/app/invitations'
     | '/app/members'
     | '/app/onboarding'
     | '/app/question-bank'
+    | '/app/reports'
     | '/app/settings'
     | '/app/student'
     | '/app/students'
@@ -296,12 +318,14 @@ export interface FileRouteTypes {
     | '/app/assignments'
     | '/app/audit-log'
     | '/app/exams'
+    | '/app/grading-queue'
     | '/app/institution'
     | '/app/invigilator'
     | '/app/invitations'
     | '/app/members'
     | '/app/onboarding'
     | '/app/question-bank'
+    | '/app/reports'
     | '/app/settings'
     | '/app/student'
     | '/app/students'
@@ -376,6 +400,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppExamsRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/app/grading-queue': {
+      id: '/app/grading-queue'
+      path: '/grading-queue'
+      fullPath: '/app/grading-queue'
+      preLoaderRoute: typeof AppGradingQueueRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/app/institution': {
       id: '/app/institution'
       path: '/institution'
@@ -416,6 +447,13 @@ declare module '@tanstack/react-router' {
       path: '/question-bank'
       fullPath: '/app/question-bank'
       preLoaderRoute: typeof AppQuestionBankRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/reports': {
+      id: '/app/reports'
+      path: '/reports'
+      fullPath: '/app/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/app/settings': {
@@ -503,12 +541,14 @@ interface AppRouteRouteChildren {
   AppAssignmentsRoute: typeof AppAssignmentsRoute
   AppAuditLogRoute: typeof AppAuditLogRoute
   AppExamsRoute: typeof AppExamsRoute
+  AppGradingQueueRoute: typeof AppGradingQueueRoute
   AppInstitutionRoute: typeof AppInstitutionRoute
   AppInvigilatorRoute: typeof AppInvigilatorRoute
   AppInvitationsRoute: typeof AppInvitationsRoute
   AppMembersRoute: typeof AppMembersRoute
   AppOnboardingRoute: typeof AppOnboardingRoute
   AppQuestionBankRoute: typeof AppQuestionBankRoute
+  AppReportsRoute: typeof AppReportsRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppStudentRoute: typeof AppStudentRoute
   AppStudentsRoute: typeof AppStudentsRoute
@@ -523,12 +563,14 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppAssignmentsRoute: AppAssignmentsRoute,
   AppAuditLogRoute: AppAuditLogRoute,
   AppExamsRoute: AppExamsRoute,
+  AppGradingQueueRoute: AppGradingQueueRoute,
   AppInstitutionRoute: AppInstitutionRoute,
   AppInvigilatorRoute: AppInvigilatorRoute,
   AppInvitationsRoute: AppInvitationsRoute,
   AppMembersRoute: AppMembersRoute,
   AppOnboardingRoute: AppOnboardingRoute,
   AppQuestionBankRoute: AppQuestionBankRoute,
+  AppReportsRoute: AppReportsRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppStudentRoute: AppStudentRoute,
   AppStudentsRoute: AppStudentsRoute,
