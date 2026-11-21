@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteRouteImport } from './routes/app/route'
+import { Route as DemoExamRouteImport } from './routes/demo-exam'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AppAcademicsRouteImport } from './routes/app/academics'
 import { Route as AppAssignmentsRouteImport } from './routes/app/assignments'
@@ -44,6 +45,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/app',
   path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoExamRoute = DemoExamRouteImport.update({
+  id: '/demo-exam',
+  path: '/demo-exam',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -170,6 +176,7 @@ const AppExamSessionExamIdRoute = AppExamSessionExamIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
+  '/demo-exam': typeof DemoExamRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/academics': typeof AppAcademicsRoute
   '/app/assignments': typeof AppAssignmentsRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
+  '/demo-exam': typeof DemoExamRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/academics': typeof AppAcademicsRoute
   '/app/assignments': typeof AppAssignmentsRoute
@@ -227,6 +235,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
+  '/demo-exam': typeof DemoExamRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/academics': typeof AppAcademicsRoute
   '/app/assignments': typeof AppAssignmentsRoute
@@ -257,6 +266,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/demo-exam'
     | '/reset-password'
     | '/app/academics'
     | '/app/assignments'
@@ -285,6 +295,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/app'
+    | '/demo-exam'
     | '/reset-password'
     | '/app/academics'
     | '/app/assignments'
@@ -313,6 +324,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/app'
+    | '/demo-exam'
     | '/reset-password'
     | '/app/academics'
     | '/app/assignments'
@@ -342,6 +354,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRouteRoute: typeof AppRouteRouteWithChildren
+  DemoExamRoute: typeof DemoExamRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
@@ -363,6 +376,13 @@ declare module '@tanstack/react-router' {
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AppRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo-exam': {
+      id: '/demo-exam'
+      path: '/demo-exam'
+      fullPath: '/demo-exam'
+      preLoaderRoute: typeof DemoExamRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -587,6 +607,7 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRouteRoute: AppRouteRouteWithChildren,
+  DemoExamRoute: DemoExamRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
