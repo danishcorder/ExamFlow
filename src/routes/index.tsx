@@ -105,7 +105,7 @@ function Landing() {
               <p className="mt-6 max-w-xl text-base leading-8 text-white/70 sm:text-lg">Give every step of assessment a clear place: from preparing questions to reviewing work and releasing results.</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg" className="h-12 bg-gold px-6 text-navy hover:bg-gold-light"><Link to="/auth/register">Get started free <ArrowRight className="h-4 w-4" /></Link></Button>
-                <Button asChild size="lg" variant="outline" className="h-12 border-white/35 bg-white/5 px-6 text-white hover:bg-white/10 hover:text-white"><a href="#features">Explore the platform</a></Button>
+                <Button asChild size="lg" variant="outline" className="h-12 border-white/35 bg-white/5 px-6 text-white hover:bg-white/10 hover:text-white"><Link to="/demo-exam">Try a sample ICT exam</Link></Button><Button asChild size="lg" variant="ghost" className="h-12 px-4 text-white/85 hover:bg-white/10 hover:text-white"><Link to="/demo">Explore the demo workspace</Link></Button>
               </div>
               <div className="mt-9 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-white/65 sm:text-sm">
                 {["Built for institutions", "Role-aware workspaces", "Database-level isolation"].map((item) => <span key={item} className="flex items-center gap-2"><Check className="h-4 w-4 text-gold" />{item}</span>)}

@@ -9,7 +9,6 @@ import {
   FileText,
   ClipboardCheck,
   BookOpen,
-  Award,
   MonitorPlay,
   Settings,
   BarChart3,
@@ -59,7 +58,8 @@ export const ROLES: Record<RoleKey, { label: string; short: string; path: string
       { label: 'Students & CSV import', icon: Users, to: '/app/students' },
       { label: 'Question bank', icon: BookOpen, to: '/app/question-bank' },
       { label: 'Exam builder', icon: FileText, to: '/app/exams' },
-      { label: 'Reports', icon: BarChart3, soon: true },
+      { label: 'Reports', icon: BarChart3, to: '/app/reports' },
+      { label: 'Audit log', icon: ShieldCheck, to: '/app/audit-log' },
     ],
   },
   teacher: {
@@ -73,7 +73,8 @@ export const ROLES: Record<RoleKey, { label: string; short: string; path: string
       { label: 'Teachers', icon: BookMarked, to: '/app/teachers' },
       { label: 'Question bank', icon: BookOpen, to: '/app/question-bank' },
       { label: 'My exams', icon: FileText, to: '/app/exams' },
-      { label: 'Grading queue', icon: ClipboardCheck, soon: true },
+      { label: 'Grading queue', icon: ClipboardCheck, to: '/app/grading-queue' },
+      { label: 'Reports', icon: BarChart3, to: '/app/reports' },
     ],
   },
   student: {
@@ -82,7 +83,6 @@ export const ROLES: Record<RoleKey, { label: string; short: string; path: string
     path: '/app/student',
     nav: [
       { label: 'My exams', icon: CalendarClock, to: '/app/student' },
-      { label: 'Results', icon: Award, soon: true },
     ],
   },
   invigilator: {
