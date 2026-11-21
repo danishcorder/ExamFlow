@@ -13,7 +13,7 @@ import { TeacherGradingDashboard } from '@/components/app/teacher-grading-dashbo
 import { useAuth } from '@/lib/auth';
 import { downloadCsv } from '@/lib/csv';
 import { getReportsOverviewFn } from '@/lib/reports.functions';
-import { REPORT_CSV_HEADERS, reportRowsToCsv, type ExamReportRow } from '@/lib/reports.shared';
+import { REPORT_CSV_HEADERS, reportRowsToCsv, type ExamReportRow, type ReportsOverview } from '@/lib/reports.shared';
 
 const fmtPct = (n: number | null) => (n === null ? '—' : `${n}%`);
 const dayStart = (d: string) => (d ? new Date(`${d}T00:00:00.000Z`).toISOString() : undefined);
@@ -83,6 +83,60 @@ function PassRateBars({ rows }: { rows: ExamReportRow[] }) {
   );
 }
 
+export function ReportsPanel({ data }: { data: ReportsOverview }) {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <StatCard label="Exams" value={String(data.totals.exams)} icon={FileText} hint="published or closed" />
+        <StatCard label="Submissions" value={String(data.totals.submissions)} icon={Users} hint={`${data.totals.graded} graded`} />
+        <StatCard label="Average score" value={fmtPct(data.totals.averagePercentage)} icon={Percent} hint="across graded work" />
+        <StatCard label="Pass rate" value={fmtPct(data.totals.passRate)} icon={Trophy} hint="across graded work" />
+      </div>
+      <PassRateBars rows={data.exams} />
+      <Card className="shadow-none">
+        <CardHeader><CardTitle className="text-base">All exams</CardTitle></CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <caption className="sr-only">Per-exam results summary</caption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead scope="col">Exam</TableHead>
+                  <TableHead scope="col" className="hidden md:table-cell">Date</TableHead>
+                  <TableHead scope="col" className="hidden text-right sm:table-cell">Submitted</TableHead>
+                  <TableHead scope="col" className="hidden text-right sm:table-cell">Avg</TableHead>
+                  <TableHead scope="col" className="text-right">Pass</TableHead>
+                  <TableHead scope="col">Results</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.exams.map((r) => (
+                  <TableRow key={r.examId}>
+                    <TableCell>
+                      <div className="font-medium">{r.title}</div>
+                      {r.courseLabel && <div className="text-xs text-muted-foreground">{r.courseLabel}</div>}
+                          <div className="text-xs text-muted-foreground sm:hidden">{r.submitted} submitted</div>
+                    </TableCell>
+                    <TableCell className="hidden whitespace-nowrap text-xs md:table-cell">{new Date(r.examDate).toLocaleDateString()}</TableCell>
+                    <TableCell className="hidden text-right tabular-nums sm:table-cell">{r.submitted}</TableCell>
+                    <TableCell className="hidden text-right tabular-nums sm:table-cell">{fmtPct(r.averagePercentage)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmtPct(r.passRate)}</TableCell>
+                    <TableCell>
+                      {r.submitted === 0 ? <StatusPill>No submissions</StatusPill>
+                        : r.needsAction > 0 ? <StatusPill tone="warning">{r.needsAction} need action</StatusPill>
+                        : <StatusPill tone="success">All published</StatusPill>}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export function ExamReportsView() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -111,85 +165,27 @@ export function ExamReportsView() {
         <EmptyState title="No published exams in this period"
           description="Reports appear once an exam is published. Try widening the date range." />
       ) : (
-        <>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-            <StatCard label="Exams" value={String(data.totals.exams)} icon={FileText} hint="published or closed" />
-            <StatCard label="Submissions" value={String(data.totals.submissions)} icon={Users} hint={`${data.totals.graded} graded`} />
-            <StatCard label="Average score" value={fmtPct(data.totals.averagePercentage)} icon={Percent} hint="across graded work" />
-            <StatCard label="Pass rate" value={fmtPct(data.totals.passRate)} icon={Trophy} hint="across graded work" />
-          </div>
-          <PassRateBars rows={data.exams} />
-          <Card className="shadow-none">
-            <CardHeader><CardTitle className="text-base">All exams</CardTitle></CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <caption className="sr-only">Per-exam results summary</caption>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead scope="col">Exam</TableHead>
-                      <TableHead scope="col" className="hidden md:table-cell">Date</TableHead>
-                      <TableHead scope="col" className="text-right">Submitted</TableHead>
-                      <TableHead scope="col" className="hidden text-right sm:table-cell">Avg</TableHead>
-                      <TableHead scope="col" className="text-right">Pass</TableHead>
-                      <TableHead scope="col">Results</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.exams.map((r) => (
-                      <TableRow key={r.examId}>
-                        <TableCell>
-                          <div className="font-medium">{r.title}</div>
-                          {r.courseLabel && <div className="text-xs text-muted-foreground">{r.courseLabel}</div>}
-                        </TableCell>
-                        <TableCell className="hidden whitespace-nowrap text-xs md:table-cell">{new Date(r.examDate).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-right tabular-nums">{r.submitted}</TableCell>
-                        <TableCell className="hidden text-right tabular-nums sm:table-cell">{fmtPct(r.averagePercentage)}</TableCell>
-                        <TableCell className="text-right tabular-nums">{fmtPct(r.passRate)}</TableCell>
-                        <TableCell>
-                          {r.submitted === 0 ? <StatusPill>No submissions</StatusPill>
-                            : r.needsAction > 0 ? <StatusPill tone="warning">{r.needsAction} need action</StatusPill>
-                            : <StatusPill tone="success">All published</StatusPill>}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </>
+        <ReportsPanel data={data} />
       )}
     </div>
   );
 }
 
-export function GradingQueueView() {
-  const { activeInstitutionId } = useAuth();
-  const { query } = useReports('', '');
-  const [examId, setExamId] = useState<string | null>(null);
-  const data = query.data;
-  const queue = useMemo(() => (data?.exams ?? []).filter((r) => r.submitted > 0), [data]);
-
-  if (examId && activeInstitutionId) {
-    return <TeacherGradingDashboard institutionId={activeInstitutionId} examId={examId}
-      onBack={() => { setExamId(null); void query.refetch(); }} />;
-  }
-  if (query.isLoading) return <LoadingState label="Loading grading queue…" />;
-  if (query.error) {
-    return <ErrorState title="Could not load grading queue"
-      description={query.error instanceof Error ? query.error.message : 'Unknown error'}
-      onRetry={() => { void query.refetch(); }} />;
-  }
-  if (queue.length === 0) {
-    return <EmptyState title="Nothing to grade yet" description="Submitted exams will appear here, with the most urgent first." />;
-  }
+export function GradingQueuePanel({
+  data,
+  queue,
+  onOpen,
+}: {
+  data: ReportsOverview;
+  queue: ExamReportRow[];
+  onOpen: (examId: string) => void;
+}) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-        <StatCard label="Needs action" value={String(data?.totals.needsAction ?? 0)} icon={ClipboardCheck} hint="attempts awaiting you" />
-        <div className="hidden sm:block"><StatCard label="Submissions" value={String(data?.totals.submissions ?? 0)} icon={Users} /></div>
-        <StatCard label="Graded" value={String(data?.totals.graded ?? 0)} icon={Trophy} />
+        <StatCard label="Needs action" value={String(data.totals.needsAction ?? 0)} icon={ClipboardCheck} hint="attempts awaiting you" />
+        <div className="hidden sm:block"><StatCard label="Submissions" value={String(data.totals.submissions ?? 0)} icon={Users} /></div>
+        <StatCard label="Graded" value={String(data.totals.graded ?? 0)} icon={Trophy} />
       </div>
       <ul className="space-y-3 md:hidden" aria-label="Exams ordered by outstanding grading work">
         {queue.map((r) => (
@@ -200,7 +196,7 @@ export function GradingQueueView() {
               {r.ungraded} not graded · {r.draft} draft · {r.moderated} moderated · {r.published} published
             </p>
             <Button className="mt-3 w-full" size="sm" variant={r.needsAction > 0 ? 'default' : 'outline'}
-              onClick={() => setExamId(r.examId)}>
+              onClick={() => onOpen(r.examId)}>
               {r.needsAction > 0 ? `Grade now (${r.needsAction} waiting)` : 'Review'}
             </Button>
           </li>
@@ -233,7 +229,7 @@ export function GradingQueueView() {
                     <TableCell className="text-right tabular-nums">{r.moderated}</TableCell>
                     <TableCell className="text-right tabular-nums">{r.published}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="sm" variant={r.needsAction > 0 ? 'default' : 'outline'} onClick={() => setExamId(r.examId)}>
+                      <Button size="sm" variant={r.needsAction > 0 ? 'default' : 'outline'} onClick={() => onOpen(r.examId)}>
                         {r.needsAction > 0 ? 'Grade now' : 'Review'}
                       </Button>
                     </TableCell>
@@ -246,4 +242,27 @@ export function GradingQueueView() {
       </Card>
     </div>
   );
+}
+
+export function GradingQueueView() {
+  const { activeInstitutionId } = useAuth();
+  const { query } = useReports('', '');
+  const [examId, setExamId] = useState<string | null>(null);
+  const data = query.data;
+  const queue = useMemo(() => (data?.exams ?? []).filter((r) => r.submitted > 0), [data]);
+
+  if (examId && activeInstitutionId) {
+    return <TeacherGradingDashboard institutionId={activeInstitutionId} examId={examId}
+      onBack={() => { setExamId(null); void query.refetch(); }} />;
+  }
+  if (query.isLoading) return <LoadingState label="Loading grading queue…" />;
+  if (query.error) {
+    return <ErrorState title="Could not load grading queue"
+      description={query.error instanceof Error ? query.error.message : 'Unknown error'}
+      onRetry={() => { void query.refetch(); }} />;
+  }
+  if (queue.length === 0) {
+    return <EmptyState title="Nothing to grade yet" description="Submitted exams will appear here, with the most urgent first." />;
+  }
+  return data ? <GradingQueuePanel data={data} queue={queue} onOpen={setExamId} /> : null;
 }

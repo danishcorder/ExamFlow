@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteRouteImport } from './routes/app/route'
+import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DemoExamRouteImport } from './routes/demo-exam'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AppAcademicsRouteImport } from './routes/app/academics'
@@ -34,6 +35,10 @@ import { Route as AppTeachersRouteImport } from './routes/app/teachers'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
+import { Route as DemoIndexRouteImport } from './routes/demo.index'
+import { Route as DemoAdminRouteImport } from './routes/demo.admin'
+import { Route as DemoStudentRouteImport } from './routes/demo.student'
+import { Route as DemoTeacherRouteImport } from './routes/demo.teacher'
 import { Route as OauthConsentRouteImport } from './routes/oauth/consent'
 import { Route as AppExamSessionExamIdRouteImport } from './routes/app/exam-session.$examId'
 
@@ -45,6 +50,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/app',
   path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoExamRoute = DemoExamRouteImport.update({
@@ -162,6 +172,26 @@ const AuthRegisterRoute = AuthRegisterRouteImport.update({
   path: '/auth/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoIndexRoute = DemoIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DemoRoute,
+} as any)
+const DemoAdminRoute = DemoAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => DemoRoute,
+} as any)
+const DemoStudentRoute = DemoStudentRouteImport.update({
+  id: '/student',
+  path: '/student',
+  getParentRoute: () => DemoRoute,
+} as any)
+const DemoTeacherRoute = DemoTeacherRouteImport.update({
+  id: '/teacher',
+  path: '/teacher',
+  getParentRoute: () => DemoRoute,
+} as any)
 const OauthConsentRoute = OauthConsentRouteImport.update({
   id: '/oauth/consent',
   path: '/oauth/consent',
@@ -176,6 +206,7 @@ const AppExamSessionExamIdRoute = AppExamSessionExamIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
+  '/demo': typeof DemoRouteWithChildren
   '/demo-exam': typeof DemoExamRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/academics': typeof AppAcademicsRoute
@@ -199,7 +230,11 @@ export interface FileRoutesByFullPath {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/demo/admin': typeof DemoAdminRoute
+  '/demo/student': typeof DemoStudentRoute
+  '/demo/teacher': typeof DemoTeacherRoute
   '/oauth/consent': typeof OauthConsentRoute
+  '/demo/': typeof DemoIndexRoute
   '/app/exam-session/$examId': typeof AppExamSessionExamIdRoute
 }
 export interface FileRoutesByTo {
@@ -228,13 +263,18 @@ export interface FileRoutesByTo {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/demo/admin': typeof DemoAdminRoute
+  '/demo/student': typeof DemoStudentRoute
+  '/demo/teacher': typeof DemoTeacherRoute
   '/oauth/consent': typeof OauthConsentRoute
+  '/demo': typeof DemoIndexRoute
   '/app/exam-session/$examId': typeof AppExamSessionExamIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
+  '/demo': typeof DemoRouteWithChildren
   '/demo-exam': typeof DemoExamRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/academics': typeof AppAcademicsRoute
@@ -258,7 +298,11 @@ export interface FileRoutesById {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/demo/admin': typeof DemoAdminRoute
+  '/demo/student': typeof DemoStudentRoute
+  '/demo/teacher': typeof DemoTeacherRoute
   '/oauth/consent': typeof OauthConsentRoute
+  '/demo/': typeof DemoIndexRoute
   '/app/exam-session/$examId': typeof AppExamSessionExamIdRoute
 }
 export interface FileRouteTypes {
@@ -266,6 +310,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/demo'
     | '/demo-exam'
     | '/reset-password'
     | '/app/academics'
@@ -289,7 +334,11 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/demo/admin'
+    | '/demo/student'
+    | '/demo/teacher'
     | '/oauth/consent'
+    | '/demo/'
     | '/app/exam-session/$examId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -318,12 +367,17 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/demo/admin'
+    | '/demo/student'
+    | '/demo/teacher'
     | '/oauth/consent'
+    | '/demo'
     | '/app/exam-session/$examId'
   id:
     | '__root__'
     | '/'
     | '/app'
+    | '/demo'
     | '/demo-exam'
     | '/reset-password'
     | '/app/academics'
@@ -347,13 +401,18 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/demo/admin'
+    | '/demo/student'
+    | '/demo/teacher'
     | '/oauth/consent'
+    | '/demo/'
     | '/app/exam-session/$examId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRouteRoute: typeof AppRouteRouteWithChildren
+  DemoRoute: typeof DemoRouteWithChildren
   DemoExamRoute: typeof DemoExamRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
@@ -376,6 +435,13 @@ declare module '@tanstack/react-router' {
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AppRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo-exam': {
@@ -539,6 +605,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo/': {
+      id: '/demo/'
+      path: '/'
+      fullPath: '/demo/'
+      preLoaderRoute: typeof DemoIndexRouteImport
+      parentRoute: typeof DemoRoute
+    }
+    '/demo/admin': {
+      id: '/demo/admin'
+      path: '/admin'
+      fullPath: '/demo/admin'
+      preLoaderRoute: typeof DemoAdminRouteImport
+      parentRoute: typeof DemoRoute
+    }
+    '/demo/student': {
+      id: '/demo/student'
+      path: '/student'
+      fullPath: '/demo/student'
+      preLoaderRoute: typeof DemoStudentRouteImport
+      parentRoute: typeof DemoRoute
+    }
+    '/demo/teacher': {
+      id: '/demo/teacher'
+      path: '/teacher'
+      fullPath: '/demo/teacher'
+      preLoaderRoute: typeof DemoTeacherRouteImport
+      parentRoute: typeof DemoRoute
+    }
     '/oauth/consent': {
       id: '/oauth/consent'
       path: '/oauth/consent'
@@ -604,9 +698,26 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
   AppRouteRouteChildren,
 )
 
+interface DemoRouteChildren {
+  DemoAdminRoute: typeof DemoAdminRoute
+  DemoStudentRoute: typeof DemoStudentRoute
+  DemoTeacherRoute: typeof DemoTeacherRoute
+  DemoIndexRoute: typeof DemoIndexRoute
+}
+
+const DemoRouteChildren: DemoRouteChildren = {
+  DemoAdminRoute: DemoAdminRoute,
+  DemoStudentRoute: DemoStudentRoute,
+  DemoTeacherRoute: DemoTeacherRoute,
+  DemoIndexRoute: DemoIndexRoute,
+}
+
+const DemoRouteWithChildren = DemoRoute._addFileChildren(DemoRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRouteRoute: AppRouteRouteWithChildren,
+  DemoRoute: DemoRouteWithChildren,
   DemoExamRoute: DemoExamRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
