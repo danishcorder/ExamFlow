@@ -1,3 +1,11 @@
+import {
+  chunk,
+  computeExamAnalytics,
+  fetchAllPages,
+  type AnalyticsGradeRow,
+  type AnalyticsQuestionGradeRow,
+  type AnalyticsSnapshotQuestion,
+} from './grading.analytics';
 import type { QuestionType } from '@/integrations/supabase/types';
 import type { ExamSnapshotPayload } from './exams.server';
 import {
@@ -210,18 +218,8 @@ export async function loadTeacherExamGradingDashboard(
     throw new AuthorizationError('Educator access required to grade exams', 403);
   }
 
-  const [examRes, attemptsRes, gradesRes, versionRes] = await Promise.all([
+  const [examRes, versionRes, fetchedAttempts, gradeRows] = await Promise.all([
     (supabase as any).from('exams').select('*').eq('id', examId).eq('institution_id', institutionId).maybeSingle(),
-    (supabase as any)
-      .from('exam_attempts')
-      .select('id, student_id, status, started_at, submitted_at, total_questions')
-      .eq('exam_id', examId)
-      .eq('institution_id', institutionId),
-    (supabase as any)
-      .from('exam_attempt_grades')
-      .select('attempt_id, status, total_awarded_marks, max_possible_marks, percentage, is_passing')
-      .eq('exam_id', examId)
-      .eq('institution_id', institutionId),
     (supabase as any)
       .from('exam_versions')
       .select('id, title, course_code, course_title, total_marks, passing_marks, passing_percentage, negative_marking_enabled, default_negative_marks')
@@ -230,24 +228,45 @@ export async function loadTeacherExamGradingDashboard(
       .order('version_number', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    fetchAllPages<any>((from, to) =>
+      (supabase as any)
+        .from('exam_attempts')
+        .select('id, student_id, status, started_at, submitted_at, total_questions')
+        .eq('exam_id', examId)
+        .eq('institution_id', institutionId)
+        .order('id')
+        .range(from, to),
+    ),
+    fetchAllPages<any>((from, to) =>
+      (supabase as any)
+        .from('exam_attempt_grades')
+        .select('attempt_id, status, total_awarded_marks, max_possible_marks, percentage, is_passing')
+        .eq('exam_id', examId)
+        .eq('institution_id', institutionId)
+        .order('attempt_id')
+        .range(from, to),
+    ),
   ]);
 
   if (examRes.error || !examRes.data) throw new Error('Exam not found');
-  if (attemptsRes.error) throw new Error(attemptsRes.error.message);
-  if (gradesRes.error) throw new Error(gradesRes.error.message);
 
   const exam = examRes.data as any;
-  const attempts = (attemptsRes.data ?? []) as any[];
-  const gradesMap = new Map((gradesRes.data ?? []).map((g: any) => [g.attempt_id, g]));
+  const attempts = fetchedAttempts as any[];
+  const gradesMap = new Map(gradeRows.map((g: any) => [g.attempt_id, g]));
   const version = versionRes.data as any;
 
-  const studentIds = attempts.map((a) => a.student_id);
-  const studentsRes = studentIds.length > 0
-    ? await (supabase as any)
-        .from('student_records')
-        .select('id, student_code, full_name, email')
-        .in('id', studentIds)
-    : { data: [] };
+  const studentIds = Array.from(new Set(attempts.map((a) => a.student_id as string)));
+  const studentRows: any[] = [];
+  for (const ids of chunk(studentIds, 100)) {
+    const res = await (supabase as any)
+      .from('student_records')
+      .select('id, student_code, full_name, email')
+      .in('id', ids)
+      .eq('institution_id', institutionId);
+    if (res.error) throw new Error(res.error.message);
+    studentRows.push(...(res.data ?? []));
+  }
+  const studentsRes = { data: studentRows };
 
   const studentMap = new Map((studentsRes.data ?? []).map((s: any) => [s.id, s]));
 
@@ -676,13 +695,8 @@ export async function loadExamAnalytics(
     throw new AuthorizationError('Educator access required for exam analytics', 403);
   }
 
-  const [examRes, gradesRes, versionRes] = await Promise.all([
+  const [examRes, versionRes] = await Promise.all([
     (supabase as any).from('exams').select('title, total_marks').eq('id', examId).eq('institution_id', institutionId).maybeSingle(),
-    (supabase as any)
-      .from('exam_attempt_grades')
-      .select('total_awarded_marks, max_possible_marks, percentage, is_passing, attempt_id')
-      .eq('exam_id', examId)
-      .eq('institution_id', institutionId),
     (supabase as any)
       .from('exam_versions')
       .select('title, snapshot_payload')
@@ -692,83 +706,52 @@ export async function loadExamAnalytics(
       .limit(1)
       .maybeSingle(),
   ]);
-
   if (examRes.error || !examRes.data) throw new Error('Exam not found');
-  if (gradesRes.error) throw new Error(gradesRes.error.message);
 
-  const grades = (gradesRes.data ?? []) as any[];
-  const totalSubmissions = grades.length;
+  // Page past the 1000-row API cap so large exams are not silently truncated.
+  const grades = await fetchAllPages<AnalyticsGradeRow>((from, to) =>
+    (supabase as any)
+      .from('exam_attempt_grades')
+      .select('total_awarded_marks, max_possible_marks, percentage, is_passing, attempt_id')
+      .eq('exam_id', examId)
+      .eq('institution_id', institutionId)
+      .order('attempt_id')
+      .range(from, to),
+  );
 
-  let sumScore = 0;
-  let highest = 0;
-  let lowest = totalSubmissions > 0 ? 999999 : 0;
-  let passCount = 0;
-
-  for (const g of grades) {
-    const sc = Number(g.total_awarded_marks);
-    sumScore += sc;
-    if (sc > highest) highest = sc;
-    if (sc < lowest) lowest = sc;
-    if (g.is_passing) passCount++;
-  }
-
-  const averageScore = totalSubmissions > 0 ? Number((sumScore / totalSubmissions).toFixed(1)) : 0;
-  const passRate = totalSubmissions > 0 ? Number(((passCount / totalSubmissions) * 100).toFixed(1)) : 0;
-
-  const attemptIds = grades.map((g: any) => g.attempt_id);
-  const qGradesRes = attemptIds.length > 0
-    ? await (supabase as any)
+  // Chunk the IN list: hundreds of UUIDs in one request exceed URL limits.
+  const questionGrades: AnalyticsQuestionGradeRow[] = [];
+  for (const ids of chunk(grades.map((g) => g.attempt_id), 100)) {
+    const rows = await fetchAllPages<AnalyticsQuestionGradeRow>((from, to) =>
+      (supabase as any)
         .from('exam_question_grades')
-        .select('question_id, awarded_marks, max_marks, is_correct')
-        .in('attempt_id', attemptIds)
+        .select('question_id, awarded_marks, max_marks, is_correct, attempt_id')
+        .in('attempt_id', ids)
         .eq('institution_id', institutionId)
-    : { data: [] };
-
-  const qMap = new Map<string, { totalAwarded: number; max: number; count: number; correct: number }>();
-  for (const qg of (qGradesRes.data ?? []) as any[]) {
-    let cur = qMap.get(qg.question_id);
-    if (!cur) {
-      cur = { totalAwarded: 0, max: Number(qg.max_marks), count: 0, correct: 0 };
-      qMap.set(qg.question_id, cur);
-    }
-    cur.totalAwarded += Number(qg.awarded_marks);
-    cur.count++;
-    if (qg.is_correct) cur.correct++;
+        .order('attempt_id')
+        .order('question_id')
+        .range(from, to),
+    );
+    questionGrades.push(...rows);
   }
 
-  const snapshot = (versionRes.data as any)?.snapshot_payload as unknown as ExamSnapshotPayload;
-  const questionStats = [];
+  const snapshot = (versionRes.data as any)?.snapshot_payload as unknown as ExamSnapshotPayload | undefined;
+  const snapshotQuestions: AnalyticsSnapshotQuestion[] = [];
   for (const sec of snapshot?.sections ?? []) {
     for (const q of sec.questions ?? []) {
-      const stats = qMap.get(q.id);
-      const cnt = stats?.count ?? 0;
-      const avgAw = cnt > 0 ? Number((stats!.totalAwarded / cnt).toFixed(1)) : 0;
-      const maxM = Number(q.effective_marks ?? 10);
-      const successRate = maxM > 0 ? Number(((avgAw / maxM) * 100).toFixed(1)) : 0;
-
-      questionStats.push({
-        questionId: q.id,
+      snapshotQuestions.push({
+        id: q.id,
         title: q.title,
-        questionType: q.question_type,
-        maxMarks: maxM,
-        attemptCount: cnt,
-        correctCount: stats?.correct ?? 0,
-        averageAwarded: avgAw,
-        successRate,
+        question_type: q.question_type,
+        effective_marks: q.effective_marks ?? null,
       });
     }
   }
 
-  return {
-    examId,
-    examTitle: (versionRes.data as any)?.title ?? (examRes.data as any).title,
-    totalSubmissions,
-    averageScore,
-    highestScore: totalSubmissions > 0 ? highest : 0,
-    lowestScore: totalSubmissions > 0 ? lowest : 0,
-    passCount,
-    failCount: totalSubmissions - passCount,
-    passRate,
-    questionStats,
-  };
+  return computeExamAnalytics(
+    { examId, examTitle: (versionRes.data as any)?.title ?? (examRes.data as any).title },
+    grades,
+    questionGrades,
+    snapshotQuestions,
+  );
 }
