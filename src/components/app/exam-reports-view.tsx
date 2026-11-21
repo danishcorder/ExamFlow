@@ -65,8 +65,8 @@ function PassRateBars({ rows }: { rows: ExamReportRow[] }) {
         <ul className="space-y-3">
           {withData.map((r) => (
             <li key={r.examId}>
-              <div className="flex items-baseline justify-between gap-3 text-sm">
-                <span className="truncate font-medium">{r.title}</span>
+              <div className="flex flex-col gap-0.5 text-sm sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
+                <span className="font-medium sm:truncate">{r.title}</span>
                 <span className="shrink-0 tabular-nums text-muted-foreground">
                   {fmtPct(r.passRate)} pass · avg {fmtPct(r.averagePercentage)}
                 </span>
@@ -112,7 +112,7 @@ export function ExamReportsView() {
           description="Reports appear once an exam is published. Try widening the date range." />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             <StatCard label="Exams" value={String(data.totals.exams)} icon={FileText} hint="published or closed" />
             <StatCard label="Submissions" value={String(data.totals.submissions)} icon={Users} hint={`${data.totals.graded} graded`} />
             <StatCard label="Average score" value={fmtPct(data.totals.averagePercentage)} icon={Percent} hint="across graded work" />
@@ -128,9 +128,9 @@ export function ExamReportsView() {
                   <TableHeader>
                     <TableRow>
                       <TableHead scope="col">Exam</TableHead>
-                      <TableHead scope="col">Date</TableHead>
+                      <TableHead scope="col" className="hidden md:table-cell">Date</TableHead>
                       <TableHead scope="col" className="text-right">Submitted</TableHead>
-                      <TableHead scope="col" className="text-right">Avg</TableHead>
+                      <TableHead scope="col" className="hidden text-right sm:table-cell">Avg</TableHead>
                       <TableHead scope="col" className="text-right">Pass</TableHead>
                       <TableHead scope="col">Results</TableHead>
                     </TableRow>
@@ -142,9 +142,9 @@ export function ExamReportsView() {
                           <div className="font-medium">{r.title}</div>
                           {r.courseLabel && <div className="text-xs text-muted-foreground">{r.courseLabel}</div>}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap text-xs">{new Date(r.examDate).toLocaleDateString()}</TableCell>
+                        <TableCell className="hidden whitespace-nowrap text-xs md:table-cell">{new Date(r.examDate).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right tabular-nums">{r.submitted}</TableCell>
-                        <TableCell className="text-right tabular-nums">{fmtPct(r.averagePercentage)}</TableCell>
+                        <TableCell className="hidden text-right tabular-nums sm:table-cell">{fmtPct(r.averagePercentage)}</TableCell>
                         <TableCell className="text-right tabular-nums">{fmtPct(r.passRate)}</TableCell>
                         <TableCell>
                           {r.submitted === 0 ? <StatusPill>No submissions</StatusPill>
@@ -186,12 +186,27 @@ export function GradingQueueView() {
   }
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         <StatCard label="Needs action" value={String(data?.totals.needsAction ?? 0)} icon={ClipboardCheck} hint="attempts awaiting you" />
-        <StatCard label="Submissions" value={String(data?.totals.submissions ?? 0)} icon={Users} />
+        <div className="hidden sm:block"><StatCard label="Submissions" value={String(data?.totals.submissions ?? 0)} icon={Users} /></div>
         <StatCard label="Graded" value={String(data?.totals.graded ?? 0)} icon={Trophy} />
       </div>
-      <Card className="shadow-none">
+      <ul className="space-y-3 md:hidden" aria-label="Exams ordered by outstanding grading work">
+        {queue.map((r) => (
+          <li key={r.examId} className="rounded-xl border bg-card p-4">
+            <div className="font-medium">{r.title}</div>
+            <p className="mt-0.5 text-xs text-muted-foreground">{r.submitted} submitted</p>
+            <p className="mt-2 text-sm tabular-nums">
+              {r.ungraded} not graded · {r.draft} draft · {r.moderated} moderated · {r.published} published
+            </p>
+            <Button className="mt-3 w-full" size="sm" variant={r.needsAction > 0 ? 'default' : 'outline'}
+              onClick={() => setExamId(r.examId)}>
+              {r.needsAction > 0 ? `Grade now (${r.needsAction} waiting)` : 'Review'}
+            </Button>
+          </li>
+        ))}
+      </ul>
+      <Card className="hidden shadow-none md:block">
         <CardContent className="pt-6">
           <div className="overflow-x-auto">
             <Table>

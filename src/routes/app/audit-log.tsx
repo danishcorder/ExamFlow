@@ -97,7 +97,7 @@ function AuditLogPage() {
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 placeholder="Search action or resource…"
-                className="h-9 w-56 pl-8"
+                className="h-9 w-64 pl-8"
               />
             </div>
             <div className="space-y-1">
