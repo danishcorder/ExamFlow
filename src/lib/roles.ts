@@ -60,6 +60,7 @@ export const ROLES: Record<RoleKey, { label: string; short: string; path: string
       { label: 'Question bank', icon: BookOpen, to: '/app/question-bank' },
       { label: 'Exam builder', icon: FileText, to: '/app/exams' },
       { label: 'Reports', icon: BarChart3, soon: true },
+      { label: 'Audit log', icon: ShieldCheck, to: '/app/audit-log' },
     ],
   },
   teacher: {

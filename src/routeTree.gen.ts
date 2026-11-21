@@ -14,6 +14,7 @@ import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AppAcademicsRouteImport } from './routes/app/academics'
 import { Route as AppAssignmentsRouteImport } from './routes/app/assignments'
+import { Route as AppAuditLogRouteImport } from './routes/app/audit-log'
 import { Route as AppExamsRouteImport } from './routes/app/exams'
 import { Route as AppInstitutionRouteImport } from './routes/app/institution'
 import { Route as AppInvigilatorRouteImport } from './routes/app/invigilator'
@@ -56,6 +57,11 @@ const AppAcademicsRoute = AppAcademicsRouteImport.update({
 const AppAssignmentsRoute = AppAssignmentsRouteImport.update({
   id: '/assignments',
   path: '/assignments',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppAuditLogRoute = AppAuditLogRouteImport.update({
+  id: '/audit-log',
+  path: '/audit-log',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppExamsRoute = AppExamsRouteImport.update({
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/app/academics': typeof AppAcademicsRoute
   '/app/assignments': typeof AppAssignmentsRoute
+  '/app/audit-log': typeof AppAuditLogRoute
   '/app/exams': typeof AppExamsRoute
   '/app/institution': typeof AppInstitutionRoute
   '/app/invigilator': typeof AppInvigilatorRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/app/academics': typeof AppAcademicsRoute
   '/app/assignments': typeof AppAssignmentsRoute
+  '/app/audit-log': typeof AppAuditLogRoute
   '/app/exams': typeof AppExamsRoute
   '/app/institution': typeof AppInstitutionRoute
   '/app/invigilator': typeof AppInvigilatorRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/app/academics': typeof AppAcademicsRoute
   '/app/assignments': typeof AppAssignmentsRoute
+  '/app/audit-log': typeof AppAuditLogRoute
   '/app/exams': typeof AppExamsRoute
   '/app/institution': typeof AppInstitutionRoute
   '/app/invigilator': typeof AppInvigilatorRoute
@@ -233,6 +242,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/app/academics'
     | '/app/assignments'
+    | '/app/audit-log'
     | '/app/exams'
     | '/app/institution'
     | '/app/invigilator'
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/app/academics'
     | '/app/assignments'
+    | '/app/audit-log'
     | '/app/exams'
     | '/app/institution'
     | '/app/invigilator'
@@ -283,6 +294,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/app/academics'
     | '/app/assignments'
+    | '/app/audit-log'
     | '/app/exams'
     | '/app/institution'
     | '/app/invigilator'
@@ -348,6 +360,13 @@ declare module '@tanstack/react-router' {
       path: '/assignments'
       fullPath: '/app/assignments'
       preLoaderRoute: typeof AppAssignmentsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/audit-log': {
+      id: '/app/audit-log'
+      path: '/audit-log'
+      fullPath: '/app/audit-log'
+      preLoaderRoute: typeof AppAuditLogRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/app/exams': {
@@ -482,6 +501,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteRouteChildren {
   AppAcademicsRoute: typeof AppAcademicsRoute
   AppAssignmentsRoute: typeof AppAssignmentsRoute
+  AppAuditLogRoute: typeof AppAuditLogRoute
   AppExamsRoute: typeof AppExamsRoute
   AppInstitutionRoute: typeof AppInstitutionRoute
   AppInvigilatorRoute: typeof AppInvigilatorRoute
@@ -501,6 +521,7 @@ interface AppRouteRouteChildren {
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppAcademicsRoute: AppAcademicsRoute,
   AppAssignmentsRoute: AppAssignmentsRoute,
+  AppAuditLogRoute: AppAuditLogRoute,
   AppExamsRoute: AppExamsRoute,
   AppInstitutionRoute: AppInstitutionRoute,
   AppInvigilatorRoute: AppInvigilatorRoute,
