@@ -59,7 +59,8 @@ function Login() {
       });
       if (sessionError) throw new Error('Could not start your session. Please try again.');
       toast.success('Welcome back');
-      void navigate({ to: result.mustChangePassword ? '/auth/change-password' : result.redirectTo });
+      const destination = result.mustChangePassword ? '/auth/change-password' : result.redirectTo;
+      void navigate({ href: destination });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not sign in. Check your username and password.');
     } finally {
