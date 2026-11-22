@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -14,6 +15,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
+import { isAssistantHiddenOn } from "@/lib/assistant-visibility";
 
 function NotFoundComponent() {
   return (
@@ -129,16 +131,20 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const showAssistant = !isAssistantHiddenOn(pathname);
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <AuthProvider>
         <Outlet />
-        <zapier-interfaces-chatbot-embed
-          is-popup="true"
-          chatbot-id="cmwn4cumd007712ytzn34vn3f"
-        />
+        {showAssistant ? (
+          <zapier-interfaces-chatbot-embed
+            is-popup="true"
+            chatbot-id="cmwn4cumd007712ytzn34vn3f"
+          />
+        ) : null}
         <Toaster richColors position="top-right" />
       </AuthProvider>
     </QueryClientProvider>
