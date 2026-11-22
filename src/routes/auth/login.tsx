@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthCard, FieldError } from '@/components/app/auth-layout';
 import { ErrorState } from '@/components/app/states';
-import { supabase } from '@/integrations/supabase/client';
+import { isSupabaseConfigured, supabase } from '@/integrations/supabase/client';
 import { signInWithUsernameFn } from '@/lib/provisioning.functions';
 
 export const Route = createFileRoute('/auth/login')({
@@ -41,6 +41,10 @@ function Login() {
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    if (!isSupabaseConfigured) {
+      setError('Sign-in is unavailable until the deployment administrator connects a Supabase project.');
+      return;
+    }
     const parsed = schema.safeParse(Object.fromEntries(new FormData(e.currentTarget)));
     if (!parsed.success) {
       setErrors(
@@ -79,6 +83,12 @@ function Login() {
       }
     >
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
+        {!isSupabaseConfigured && (
+          <ErrorState
+            title="Sign-in unavailable"
+            description="This deployment is missing its public Supabase settings. Ask the deployment administrator to finish setup."
+          />
+        )}
         {error && <ErrorState title="Could not sign in" description={error} />}
         <div>
           <Label htmlFor="username">Username</Label>
@@ -109,7 +119,7 @@ function Login() {
           />
           <FieldError msg={errors['password']} />
         </div>
-        <Button type="submit" className="w-full" disabled={busy}>
+        <Button type="submit" className="w-full" disabled={busy || !isSupabaseConfigured}>
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
           Sign in
         </Button>

@@ -9,7 +9,7 @@ import {
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { isSupabaseConfigured, supabase } from '@/integrations/supabase/client';
 import { getWorkspaceBootstrapFn } from '@/lib/workspace.functions';
 import type {
   MembershipWithInstitution,
@@ -44,6 +44,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     const { data } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
       setLoading(false);
@@ -146,7 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient, user?.id]);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    if (isSupabaseConfigured) await supabase.auth.signOut();
     setSelectedInstitutionId(null);
     queryClient.clear();
   }, [queryClient]);

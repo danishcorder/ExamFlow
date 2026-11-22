@@ -140,7 +140,7 @@ VITE_SUPABASE_PROJECT_ID="your-project-id"
 
 ## Database Setup & Migrations
 
-ExamFlow includes 8 sequential SQL migration files in `supabase/migrations/` that configure tables, foreign keys, RLS policies, indexes, and audit triggers.
+ExamFlow includes 12 sequential SQL migration files in `supabase/migrations/` that configure tables, foreign keys, RLS policies, indexes, provisioning, and audit triggers.
 
 ### Running Migrations in Order
 
@@ -163,11 +163,19 @@ Navigate to your Supabase Project **SQL Editor** and run the following migration
    - Configures `exam_attempt_grades`, `exam_question_grades`, grade change audit triggers, and result visibility isolation.
 8. `supabase/migrations/20261116000003_phase8_proctoring_saas.sql`
    - Configures `exam_proctoring_events`, `exam_attempt_reviews`, and `institution_subscriptions`.
+9. `supabase/migrations/20261116000004_fix_verify_same_institution_refs.sql`
+   - Fixes same-institution reference checks used by row-level security.
+10. `supabase/migrations/20261117000000_central_user_provisioning.sql`
+    - Adds platform Super Admin provisioning and username/password profile fields.
+11. `supabase/migrations/20261117000001_allow_auth_profile_username_pending.sql`
+    - Allows managed accounts to finish profile setup after authentication.
+12. `supabase/migrations/20261117000002_revoke_legacy_institution_rpc.sql`
+    - Revokes the legacy self-service institution creation function.
 
 ### Create Storage Bucket for Attachments
 In your Supabase Dashboard, go to **Storage** and create a new bucket:
 - **Bucket Name**: `question-attachments`
-- **Public**: Enabled (or Authenticated with read access for authenticated users)
+- **Public**: Disabled. The app creates signed URLs for authorized attachment access.
 
 ### Verify Database Readiness
 Verify connectivity, all 32 required tables, RPC functions, and the storage bucket with:
@@ -314,6 +322,18 @@ Add the following under **Project Settings > Environment Variables**:
 | `SUPABASE_PUBLISHABLE_KEY` | Server Publishable Key | `sb_publishable_...` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server Service Role Key | `sb_secret_...` |
 | `NITRO_PRESET` | Nitro deployment target | `vercel` |
+
+### Restoring a deployment with a new Supabase project
+
+If the original Supabase account is unavailable, create a new Supabase account and project. A new project starts with an empty database; old records and passwords cannot be recovered from the project unless you have an export or retained access.
+
+1. Run all 12 migrations above, in order, in the new project's SQL Editor.
+2. Create the private `question-attachments` Storage bucket.
+3. In Supabase Authentication settings, disable public sign-ups. Create the initial Super Admin through the Supabase dashboard, then add that user to `public.platform_admins` using the project's SQL Editor.
+4. In Vercel, set the variables above for the **Production** environment. The two browser variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are required at build time. The server also needs `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. Never add the service-role key with a `VITE_` prefix or share it in chat.
+5. Redeploy after changing variables. If the site still returns HTTP 500 while both public variables are set, inspect the Vercel Runtime Logs for the failing request.
+
+When either browser variable is absent, public pages can still render, but sign-in and database features remain unavailable and the login page displays a setup message.
 
 ### Step 4: Deploy
 Click **Deploy**. Vercel will build your app and deploy serverless endpoints.
