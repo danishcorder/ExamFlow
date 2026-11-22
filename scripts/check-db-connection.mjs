@@ -13,19 +13,14 @@
  *   2 = Connection works, but SQL migrations are not yet applied (or incomplete)
  *   1 = Network, auth, or configuration failure
  *
+ * Set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY (or their VITE_ equivalents) explicitly.
  * Run: npm run db:check
  */
 
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ||
-  process.env.VITE_SUPABASE_URL ||
-  'https://cmweagrpneprbsoiuaek.supabase.co';
-const SUPABASE_KEY =
-  process.env.SUPABASE_PUBLISHABLE_KEY ||
-  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  'sb_publishable_PT_Mt4smcGF5diQziUtlzA_NSo7ZSnX';
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const REQUIRED_TABLES = [
   // Phase 2: Auth, Roles, Institutions & Audit
