@@ -21,7 +21,7 @@ const signInSchema = z.object({
 export const signInWithUsernameFn = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => signInSchema.parse(data))
   .handler(async ({ data }) => {
-    const { signInWithUsername } = await import('./provisioning.server');
+    const { signInWithUsername } = await import('./username-login.server');
     return signInWithUsername(data);
   });
 
