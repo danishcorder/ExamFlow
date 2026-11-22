@@ -100,6 +100,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" },
     ],
+    scripts: [
+      {
+        type: "module",
+        src: "https://interfaces.zapier.com/assets/web-components/zapier-interfaces/zapier-interfaces.esm.js",
+      },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -129,6 +135,10 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <AuthProvider>
         <Outlet />
+        <zapier-interfaces-chatbot-embed
+          is-popup="true"
+          chatbot-id="cmwn4cumd007712ytzn34vn3f"
+        />
         <Toaster richColors position="top-right" />
       </AuthProvider>
     </QueryClientProvider>
