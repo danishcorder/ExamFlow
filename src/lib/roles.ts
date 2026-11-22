@@ -14,7 +14,6 @@ import {
   BarChart3,
   ShieldCheck,
   MailPlus,
-  PlusCircle,
   BookMarked,
   UserCheck,
   type LucideIcon,
@@ -40,6 +39,7 @@ export const ROLES: Record<RoleKey, { label: string; short: string; path: string
     nav: [
       { label: 'Overview', icon: LayoutDashboard, to: '/app/super-admin' },
       { label: 'Institutions', icon: Building2, to: '/app/super-admin' },
+      { label: 'Manage accounts', icon: Users, to: '/app/members' },
       { label: 'Subscriptions', icon: CreditCard, soon: true },
       { label: 'System health', icon: Activity, soon: true },
       { label: 'Audit logs', icon: ShieldCheck, soon: true },
@@ -81,9 +81,7 @@ export const ROLES: Record<RoleKey, { label: string; short: string; path: string
     label: 'Student',
     short: 'Student',
     path: '/app/student',
-    nav: [
-      { label: 'My exams', icon: CalendarClock, to: '/app/student' },
-    ],
+    nav: [{ label: 'My exams', icon: CalendarClock, to: '/app/student' }],
   },
   invigilator: {
     label: 'Invigilator',
@@ -100,7 +98,6 @@ export const ROLE_KEYS = Object.keys(ROLES) as RoleKey[];
 
 export const WORKSPACE_UTILITY_NAV: NavItem[] = [
   { label: 'Invitations', icon: MailPlus, to: '/app/invitations' },
-  { label: 'New institution', icon: PlusCircle, to: '/app/onboarding' },
   { label: 'Account settings', icon: Settings, to: '/app/settings' },
 ];
 
