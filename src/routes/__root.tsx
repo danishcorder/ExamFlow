@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -14,6 +15,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
+import { isAssistantHiddenOn } from "@/lib/assistant-visibility";
 
 function NotFoundComponent() {
   return (
@@ -100,12 +102,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" },
     ],
-    scripts: [
-      {
-        type: "module",
-        src: "https://interfaces.zapier.com/assets/web-components/zapier-interfaces/zapier-interfaces.esm.js",
-      },
-    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -127,18 +123,38 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function ZapierChatbot() {
+  useEffect(() => {
+    // Load the third-party widget only on routes where it can be used. Direct exam loads
+    // therefore do not fetch or execute the chatbot script at all.
+    if (!document.querySelector('script[data-examflow-zapier="true"]')) {
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = "https://interfaces.zapier.com/assets/web-components/zapier-interfaces/zapier-interfaces.esm.js";
+      script.dataset.examflowZapier = "true";
+      document.head.appendChild(script);
+    }
+  }, []);
+
+  return (
+    <zapier-interfaces-chatbot-embed
+      is-popup="true"
+      chatbot-id="cmwn4cumd007712ytzn34vn3f"
+    />
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const showAssistant = !isAssistantHiddenOn(pathname);
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <AuthProvider>
         <Outlet />
-        <zapier-interfaces-chatbot-embed
-          is-popup="true"
-          chatbot-id="cmwn4cumd007712ytzn34vn3f"
-        />
+        {showAssistant ? <ZapierChatbot /> : null}
         <Toaster richColors position="top-right" />
       </AuthProvider>
     </QueryClientProvider>

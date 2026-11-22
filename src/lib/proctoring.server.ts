@@ -47,9 +47,14 @@ export async function recordProctoringEvent(
   });
 
   if (error) {
+    // Surface the failure so the client can retry instead of silently losing the incident.
     console.error('Failed to record proctoring event:', error.message);
+    throw new Error('Could not record the proctoring event. Please try again.');
   }
 }
+
+// Bounded so the dashboard stays fast and the attempt-id filter fits in one request URL.
+const INVIGILATOR_ATTEMPT_LIMIT = 200;
 
 export async function loadInvigilatorDashboard(
   supabase: AuthedSupabase,
@@ -75,7 +80,9 @@ export async function loadInvigilatorDashboard(
     query = query.eq('exam_id', examId);
   }
 
-  const { data: attempts, error: attErr } = await query;
+  const { data: attempts, error: attErr } = await query
+    .order('started_at', { ascending: false })
+    .limit(INVIGILATOR_ATTEMPT_LIMIT);
   if (attErr) throw new Error(attErr.message);
 
   const attemptList = attempts ?? [];
@@ -89,7 +96,11 @@ export async function loadInvigilatorDashboard(
 
   const [examsRes, studentsRes, eventsRes, reviewsRes] = await Promise.all([
     supabase.from('exams').select('id, title').in('id', examIds).eq('institution_id', institutionId),
-    supabase.from('student_records').select('id, student_code, full_name').in('id', studentIds),
+    supabase
+      .from('student_records')
+      .select('id, student_code, full_name')
+      .in('id', studentIds)
+      .eq('institution_id', institutionId),
     (supabase as any)
       .from('exam_proctoring_events')
       .select('id, attempt_id, student_id, event_type, severity, details, created_at')
@@ -102,6 +113,10 @@ export async function loadInvigilatorDashboard(
       .in('attempt_id', attemptIds)
       .eq('institution_id', institutionId),
   ]);
+
+  // Without events or reviews every attempt would wrongly appear as "cleared".
+  if (eventsRes.error) throw new Error(`Could not load proctoring events: ${eventsRes.error.message}`);
+  if (reviewsRes.error) throw new Error(`Could not load attempt reviews: ${reviewsRes.error.message}`);
 
   const examMap = new Map((examsRes.data ?? []).map((e) => [e.id, e.title]));
   const studentMap = new Map((studentsRes.data ?? []).map((s) => [s.id, s]));
@@ -169,6 +184,17 @@ export async function saveAttemptReview(
   ]);
   if (isSuperAdmin && !membership) {
     throw new AuthorizationError('Invigilator access required to review attempts', 403);
+  }
+
+  const { data: attempt, error: attemptError } = await supabase
+    .from('exam_attempts')
+    .select('id')
+    .eq('id', data.attemptId)
+    .eq('institution_id', institutionId)
+    .maybeSingle();
+  if (attemptError) throw new Error(attemptError.message);
+  if (!attempt) {
+    throw new AuthorizationError('Exam attempt not found in this institution', 404);
   }
 
   const { error } = await (supabase as any).from('exam_attempt_reviews').upsert(

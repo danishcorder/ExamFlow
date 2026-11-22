@@ -3,8 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { brokeredPreviewStorage } from './previewAuthStorage';
 
-const SUPABASE_URL = "https://cmweagrpneprbsoiuaek.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_PT_Mt4smcGF5diQziUtlzA_NSo7ZSnX";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  const missing = [
+    ...(!SUPABASE_URL ? ['VITE_SUPABASE_URL'] : []),
+    ...(!SUPABASE_PUBLISHABLE_KEY ? ['VITE_SUPABASE_PUBLISHABLE_KEY'] : []),
+  ];
+  throw new Error(`Missing Supabase environment variable(s): ${missing.join(', ')}.`);
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
