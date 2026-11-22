@@ -39,7 +39,7 @@ export const ROLES: Record<RoleKey, { label: string; short: string; path: string
     nav: [
       { label: 'Overview', icon: LayoutDashboard, to: '/app/super-admin' },
       { label: 'Institutions', icon: Building2, to: '/app/super-admin' },
-      { label: 'Manage accounts', icon: Users, to: '/app/members' },
+      { label: 'Manage accounts', icon: Users, to: '/app/accounts' },
       { label: 'Subscriptions', icon: CreditCard, soon: true },
       { label: 'System health', icon: Activity, soon: true },
       { label: 'Audit logs', icon: ShieldCheck, soon: true },
@@ -52,6 +52,7 @@ export const ROLES: Record<RoleKey, { label: string; short: string; path: string
     nav: [
       { label: 'Overview', icon: LayoutDashboard, to: '/app/institution' },
       { label: 'Members & Invites', icon: Users, to: '/app/members' },
+      { label: 'Create accounts', icon: UserCheck, to: '/app/accounts' },
       { label: 'Academic structure', icon: GraduationCap, to: '/app/academics' },
       { label: 'Teacher assignments', icon: UserCheck, to: '/app/assignments' },
       { label: 'Teachers', icon: BookMarked, to: '/app/teachers' },
