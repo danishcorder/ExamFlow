@@ -18,6 +18,7 @@ import { RoleGuard } from '@/components/app/role-guard';
 import { StatCard } from '@/components/app/stat-card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/app/states';
 import { StatusPill } from '@/components/app/status-pill';
+import { InstitutionProvisioningPanel } from '@/components/app/institution-provisioning-panel';
 import { useAuth } from '@/lib/auth';
 import { getPlatformOverviewFn, updateInstitutionStatusFn } from '@/lib/workspace.functions';
 import type { InstitutionStatus } from '@/integrations/supabase/types';
@@ -98,64 +99,66 @@ function SuperAdminPage() {
             />
             <StatCard
               label="Active tenants"
-              value={String(data.institutions.filter((i) => i.status === 'active').length)}
+              value={String(data.institutions.filter((institution) => institution.status === 'active').length)}
               icon={ShieldCheck}
             />
           </div>
+
+          <InstitutionProvisioningPanel
+            onCreated={() => void queryClient.invalidateQueries({ queryKey: ['platform-overview', user?.id] })}
+          />
 
           <Card className="shadow-none">
             <CardHeader>
               <CardTitle className="text-base">Registered institutions</CardTitle>
               <CardDescription>
-                Only users listed in platform_admins can inspect or suspend institutions.
+                Only the single Platform Super Admin can inspect or suspend institutions.
               </CardDescription>
             </CardHeader>
             <CardContent>
               {data.institutions.length === 0 ? (
                 <EmptyState title="No institutions created yet" />
               ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Institution</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Active members</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Institution</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Active members</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.institutions.map((institution) => (
+                      <TableRow key={institution.id}>
+                        <TableCell>
+                          <p className="font-medium">{institution.name}</p>
+                          <p className="font-mono text-xs text-muted-foreground">{institution.slug}</p>
+                        </TableCell>
+                        <TableCell className="capitalize">
+                          {institution.institution_type.replace('_', ' ')}
+                        </TableCell>
+                        <TableCell>{institution.memberCount}</TableCell>
+                        <TableCell>
+                          <StatusPill tone={institution.status === 'active' ? 'success' : 'danger'}>
+                            {institution.status}
+                          </StatusPill>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant={institution.status === 'active' ? 'outline' : 'default'}
+                            disabled={busyInstId === institution.id}
+                            onClick={() => void onToggleInstitution(institution.id, institution.status)}
+                          >
+                            {institution.status === 'active' ? 'Suspend' : 'Reactivate'}
+                          </Button>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {data.institutions.map((inst) => (
-                        <TableRow key={inst.id}>
-                          <TableCell>
-                            <p className="font-medium">{inst.name}</p>
-                            <p className="font-mono text-xs text-muted-foreground">{inst.slug}</p>
-                          </TableCell>
-                          <TableCell className="capitalize">
-                            {inst.institution_type.replace('_', ' ')}
-                          </TableCell>
-                          <TableCell>{inst.memberCount}</TableCell>
-                          <TableCell>
-                            <StatusPill tone={inst.status === 'active' ? 'success' : 'danger'}>
-                              {inst.status}
-                            </StatusPill>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              variant={inst.status === 'active' ? 'outline' : 'default'}
-                              disabled={busyInstId === inst.id}
-                              onClick={() => void onToggleInstitution(inst.id, inst.status)}
-                            >
-                              {inst.status === 'active' ? 'Suspend' : 'Reactivate'}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </CardContent>
           </Card>
