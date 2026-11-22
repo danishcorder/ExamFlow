@@ -19,6 +19,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RolesRouteImport } from './routes/roles'
 import { Route as SecurityRouteImport } from './routes/security'
 import { Route as AppAcademicsRouteImport } from './routes/app/academics'
+import { Route as AppAccountsRouteImport } from './routes/app/accounts'
 import { Route as AppAssignmentsRouteImport } from './routes/app/assignments'
 import { Route as AppAuditLogRouteImport } from './routes/app/audit-log'
 import { Route as AppExamsRouteImport } from './routes/app/exams'
@@ -36,6 +37,7 @@ import { Route as AppStudentsRouteImport } from './routes/app/students'
 import { Route as AppSuperAdminRouteImport } from './routes/app/super-admin'
 import { Route as AppTeacherRouteImport } from './routes/app/teacher'
 import { Route as AppTeachersRouteImport } from './routes/app/teachers'
+import { Route as AuthChangePasswordRouteImport } from './routes/auth/change-password'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
@@ -94,6 +96,11 @@ const SecurityRoute = SecurityRouteImport.update({
 const AppAcademicsRoute = AppAcademicsRouteImport.update({
   id: '/academics',
   path: '/academics',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppAccountsRoute = AppAccountsRouteImport.update({
+  id: '/accounts',
+  path: '/accounts',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppAssignmentsRoute = AppAssignmentsRouteImport.update({
@@ -181,6 +188,11 @@ const AppTeachersRoute = AppTeachersRouteImport.update({
   path: '/teachers',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AuthChangePasswordRoute = AuthChangePasswordRouteImport.update({
+  id: '/auth/change-password',
+  path: '/auth/change-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   id: '/auth/forgot-password',
   path: '/auth/forgot-password',
@@ -238,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/roles': typeof RolesRoute
   '/security': typeof SecurityRoute
   '/app/academics': typeof AppAcademicsRoute
+  '/app/accounts': typeof AppAccountsRoute
   '/app/assignments': typeof AppAssignmentsRoute
   '/app/audit-log': typeof AppAuditLogRoute
   '/app/exams': typeof AppExamsRoute
@@ -255,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/app/super-admin': typeof AppSuperAdminRoute
   '/app/teacher': typeof AppTeacherRoute
   '/app/teachers': typeof AppTeachersRoute
+  '/auth/change-password': typeof AuthChangePasswordRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
@@ -275,6 +289,7 @@ export interface FileRoutesByTo {
   '/roles': typeof RolesRoute
   '/security': typeof SecurityRoute
   '/app/academics': typeof AppAcademicsRoute
+  '/app/accounts': typeof AppAccountsRoute
   '/app/assignments': typeof AppAssignmentsRoute
   '/app/audit-log': typeof AppAuditLogRoute
   '/app/exams': typeof AppExamsRoute
@@ -292,6 +307,7 @@ export interface FileRoutesByTo {
   '/app/super-admin': typeof AppSuperAdminRoute
   '/app/teacher': typeof AppTeacherRoute
   '/app/teachers': typeof AppTeachersRoute
+  '/auth/change-password': typeof AuthChangePasswordRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
@@ -314,6 +330,7 @@ export interface FileRoutesById {
   '/roles': typeof RolesRoute
   '/security': typeof SecurityRoute
   '/app/academics': typeof AppAcademicsRoute
+  '/app/accounts': typeof AppAccountsRoute
   '/app/assignments': typeof AppAssignmentsRoute
   '/app/audit-log': typeof AppAuditLogRoute
   '/app/exams': typeof AppExamsRoute
@@ -331,6 +348,7 @@ export interface FileRoutesById {
   '/app/super-admin': typeof AppSuperAdminRoute
   '/app/teacher': typeof AppTeacherRoute
   '/app/teachers': typeof AppTeachersRoute
+  '/auth/change-password': typeof AuthChangePasswordRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
@@ -354,6 +372,7 @@ export interface FileRouteTypes {
     | '/roles'
     | '/security'
     | '/app/academics'
+    | '/app/accounts'
     | '/app/assignments'
     | '/app/audit-log'
     | '/app/exams'
@@ -371,6 +390,7 @@ export interface FileRouteTypes {
     | '/app/super-admin'
     | '/app/teacher'
     | '/app/teachers'
+    | '/auth/change-password'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
@@ -391,6 +411,7 @@ export interface FileRouteTypes {
     | '/roles'
     | '/security'
     | '/app/academics'
+    | '/app/accounts'
     | '/app/assignments'
     | '/app/audit-log'
     | '/app/exams'
@@ -408,6 +429,7 @@ export interface FileRouteTypes {
     | '/app/super-admin'
     | '/app/teacher'
     | '/app/teachers'
+    | '/auth/change-password'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
@@ -429,6 +451,7 @@ export interface FileRouteTypes {
     | '/roles'
     | '/security'
     | '/app/academics'
+    | '/app/accounts'
     | '/app/assignments'
     | '/app/audit-log'
     | '/app/exams'
@@ -446,6 +469,7 @@ export interface FileRouteTypes {
     | '/app/super-admin'
     | '/app/teacher'
     | '/app/teachers'
+    | '/auth/change-password'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
@@ -467,6 +491,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   RolesRoute: typeof RolesRoute
   SecurityRoute: typeof SecurityRoute
+  AuthChangePasswordRoute: typeof AuthChangePasswordRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
@@ -543,6 +568,13 @@ declare module '@tanstack/react-router' {
       path: '/academics'
       fullPath: '/app/academics'
       preLoaderRoute: typeof AppAcademicsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/accounts': {
+      id: '/app/accounts'
+      path: '/accounts'
+      fullPath: '/app/accounts'
+      preLoaderRoute: typeof AppAccountsRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/app/assignments': {
@@ -664,6 +696,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTeachersRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/auth/change-password': {
+      id: '/auth/change-password'
+      path: '/auth/change-password'
+      fullPath: '/auth/change-password'
+      preLoaderRoute: typeof AuthChangePasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/forgot-password': {
       id: '/auth/forgot-password'
       path: '/auth/forgot-password'
@@ -732,6 +771,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteRouteChildren {
   AppAcademicsRoute: typeof AppAcademicsRoute
+  AppAccountsRoute: typeof AppAccountsRoute
   AppAssignmentsRoute: typeof AppAssignmentsRoute
   AppAuditLogRoute: typeof AppAuditLogRoute
   AppExamsRoute: typeof AppExamsRoute
@@ -754,6 +794,7 @@ interface AppRouteRouteChildren {
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppAcademicsRoute: AppAcademicsRoute,
+  AppAccountsRoute: AppAccountsRoute,
   AppAssignmentsRoute: AppAssignmentsRoute,
   AppAuditLogRoute: AppAuditLogRoute,
   AppExamsRoute: AppExamsRoute,
@@ -804,6 +845,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   RolesRoute: RolesRoute,
   SecurityRoute: SecurityRoute,
+  AuthChangePasswordRoute: AuthChangePasswordRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,
