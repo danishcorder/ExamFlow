@@ -16,6 +16,15 @@ export type InstitutionSubscriptionData = {
   teachersCount: number;
 };
 
+const DEFAULT_FREE_PLAN = {
+  plan_tier: 'free',
+  status: 'active',
+  max_active_exams: 5,
+  max_students: 100,
+  max_teachers: 10,
+  current_period_end: null,
+} as const;
+
 export async function getInstitutionSubscription(
   supabase: AuthedSupabase,
   userId: string,
@@ -51,20 +60,14 @@ export async function getInstitutionSubscription(
       .eq('role', 'teacher'),
   ]);
 
-  let sub = subRes.data as any;
-  if (!sub) {
-    const defaultSub = {
-      institution_id: institutionId,
-      plan_tier: 'free',
-      status: 'active',
-      max_active_exams: 5,
-      max_students: 100,
-      max_teachers: 10,
-      current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    };
-    await (supabase as any).from('institution_subscriptions').upsert(defaultSub, { onConflict: 'institution_id' });
-    sub = defaultSub;
+  if (subRes.error) throw new Error(`Could not load subscription: ${subRes.error.message}`);
+  for (const res of [examsCountRes, studentsCountRes, teachersCountRes]) {
+    if (res.error) throw new Error(`Could not load plan usage: ${res.error.message}`);
   }
+
+  // Every institution gets a free plan from a database trigger. Never write plan rows with the
+  // viewer's session: clients have no write access to subscriptions.
+  const sub = (subRes.data ?? DEFAULT_FREE_PLAN) as any;
 
   return {
     institutionId,
