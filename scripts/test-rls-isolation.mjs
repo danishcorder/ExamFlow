@@ -3,24 +3,19 @@
  *
  * Prerequisites:
  *   1. Apply supabase/migrations/20261115000000_phase2_auth_roles_rls.sql in Supabase SQL Editor.
- *   2. Ensure SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY are set (or use defaults below).
- *   3. Optional: set SUPABASE_SERVICE_ROLE_KEY in env to auto-create confirmed test users
- *      and clean up test records; otherwise create 4 confirmed users or enable auto-confirm.
+ *   2. Set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY explicitly (no project defaults are used).
+ *   3. To auto-create test users, set SUPABASE_SERVICE_ROLE_KEY and
+ *      SUPABASE_RLS_TESTS_CONFIRM=YES. This script creates users in the selected project.
  *
  * Run: node scripts/test-rls-isolation.mjs
  */
 
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ||
-  process.env.VITE_SUPABASE_URL ||
-  'https://cmweagrpneprbsoiuaek.supabase.co';
-const SUPABASE_KEY =
-  process.env.SUPABASE_PUBLISHABLE_KEY ||
-  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  'sb_publishable_PT_Mt4smcGF5diQziUtlzA_NSo7ZSnX';
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const ALLOW_USER_CREATION = process.env.SUPABASE_RLS_TESTS_CONFIRM === 'YES';
 
 function assert(cond, msg) {
   if (!cond) {
@@ -29,6 +24,15 @@ function assert(cond, msg) {
 }
 
 async function run() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error('FAIL: Set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY explicitly before running.');
+    process.exit(1);
+  }
+  if (SERVICE_ROLE_KEY && !ALLOW_USER_CREATION) {
+    console.error('FAIL: Set SUPABASE_RLS_TESTS_CONFIRM=YES to confirm this test may create and delete users in the selected project.');
+    process.exit(1);
+  }
+
   console.log(`Target Supabase project: ${SUPABASE_URL}`);
 
   const anonClient = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -58,7 +62,7 @@ async function run() {
       '\nSUPABASE_SERVICE_ROLE_KEY not provided — skipping automated multi-user creation.',
     );
     console.log(
-      'Set SUPABASE_SERVICE_ROLE_KEY in environment to run full 2-institution / multi-role RLS end-to-end verification.',
+      'Set SUPABASE_SERVICE_ROLE_KEY and SUPABASE_RLS_TESTS_CONFIRM=YES in environment to run full 2-institution / multi-role RLS end-to-end verification.',
     );
     process.exit(0);
   }
