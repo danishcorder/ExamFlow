@@ -208,7 +208,7 @@ export async function createManagedAccount(actorId: string, input: {
   email: string;
   username: string;
   role: ManagedRole;
-  studentCode?: string;
+  studentCode?: string | undefined;
 }): Promise<{ username: string; temporaryPassword: string; role: ManagedRole; fullName: string }> {
   await requireInstitutionManager(actorId, input.institutionId);
   const { normalizedEmail, normalizedUsername } = await ensureAccountIdentifiers(
@@ -410,8 +410,8 @@ export async function createInstitutionWithFirstAdmin(actorId: string, input: {
     if (memberAuditError) throw new Error(`Institution Admin was created but the audit entry failed: ${memberAuditError.message}`);
 
     return {
-      institutionId,
-      institutionName: institution.name,
+      institutionId: institution.id,
+      institutionName: institution.name ?? input.name.trim(),
       adminUsername: normalizedUsername,
       temporaryPassword: password,
     };
