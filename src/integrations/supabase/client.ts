@@ -2,19 +2,17 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { brokeredPreviewStorage } from './previewAuthStorage';
+import { cleanEnvValue, findBadSupabaseEnv } from '@/lib/supabase-env';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SUPABASE_URL = cleanEnvValue(import.meta.env['VITE_SUPABASE_URL']);
+const SUPABASE_PUBLISHABLE_KEY = cleanEnvValue(import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY']);
 
-const missingEnvironmentVariables = [
-  ...(!SUPABASE_URL ? ['VITE_SUPABASE_URL'] : []),
-  ...(!SUPABASE_PUBLISHABLE_KEY ? ['VITE_SUPABASE_PUBLISHABLE_KEY'] : []),
-];
+const missingEnvironmentVariables = findBadSupabaseEnv(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 export const isSupabaseConfigured = missingEnvironmentVariables.length === 0;
 export const supabaseConfigurationError = isSupabaseConfigured
   ? null
-  : `Authentication is unavailable because Vercel is missing: ${missingEnvironmentVariables.join(', ')}.`;
+  : `Authentication is unavailable because Vercel has a missing or invalid value for: ${missingEnvironmentVariables.join(', ')}.`;
 
 function getSupabaseClient(): SupabaseClient<Database> {
   if (!isSupabaseConfigured || !SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {

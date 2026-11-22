@@ -131,7 +131,7 @@ function ZapierChatbot() {
       const script = document.createElement("script");
       script.type = "module";
       script.src = "https://interfaces.zapier.com/assets/web-components/zapier-interfaces/zapier-interfaces.esm.js";
-      script.dataset.examflowZapier = "true";
+      script.dataset['examflowZapier'] = "true";
       document.head.appendChild(script);
     }
   }, []);
