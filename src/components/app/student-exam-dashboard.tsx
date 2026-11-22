@@ -29,6 +29,8 @@ import type {
 } from '@/lib/exam-engine.shared';
 import { fetchStudentAssignedExamsFromSupabase } from '@/lib/student-exam-dashboard';
 import { StatCard } from './stat-card';
+import { HeroBanner, greetingForHour } from './hero-banner';
+import { describeNextStep } from '@/lib/student-home.shared';
 import { EmptyState, ErrorState, LoadingState } from './states';
 import { StudentResultReportCard } from './student-result-report-card';
 
@@ -201,9 +203,24 @@ export function StudentExamDashboard({
     );
   }
 
+  const next = describeNextStep(data);
+  const firstName = data.student.fullName.trim().split(/\s+/)[0];
+
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <HeroBanner
+        eyebrow={new Date(data.serverNow).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+        title={`${greetingForHour(new Date(data.serverNow).getHours())}${firstName ? `, ${firstName}` : ''}.`}
+        subtitle={<><span className="font-medium text-white">{next.headline}</span><br />{next.detail}</>}
+        actions={next.examId && (next.kind === 'resume' || next.kind === 'start') ? (
+          <Button asChild className="bg-gold text-navy hover:bg-gold-light">
+            <Link to="/app/exam-session/$examId" params={{ examId: next.examId }}>
+              <Play className="h-4 w-4" /> {next.kind === 'resume' ? 'Resume exam' : 'Start exam'}
+            </Link>
+          </Button>
+        ) : undefined}
+      />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard
           label="Eligible exams"
           value={String(data.summary.eligibleCount)}
@@ -274,7 +291,7 @@ export function StudentExamDashboard({
 
           <div className="pt-2">
             <Tabs value={tab} onValueChange={(v) => setTab(v as FilterTab)}>
-              <TabsList>
+              <TabsList className="h-auto w-full flex-wrap justify-start gap-1">
                 <TabsTrigger value="all">All ({data.summary.eligibleCount})</TabsTrigger>
                 <TabsTrigger value="active">Active ({data.summary.activeCount})</TabsTrigger>
                 <TabsTrigger value="upcoming">Upcoming ({data.summary.upcomingCount})</TabsTrigger>

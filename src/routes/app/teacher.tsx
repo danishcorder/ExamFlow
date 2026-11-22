@@ -1,6 +1,10 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { BookOpen, FileText } from 'lucide-react';
+import { BookOpen, ClipboardCheck, FileText } from 'lucide-react';
+import { HeroBanner, greetingForHour } from '@/components/app/hero-banner';
+import { ProgressRing } from '@/components/app/progress-ring';
+import { getReportsOverviewFn } from '@/lib/reports.functions';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/app/page-header';
 import { RoleGuard } from '@/components/app/role-guard';
@@ -29,7 +33,18 @@ export const Route = createFileRoute('/app/teacher')({
 });
 
 function TeacherWorkspacePage() {
-  const { activeMembership, activeInstitutionId } = useAuth();
+  const { activeMembership, activeInstitutionId, user, authHeaders, workspace } = useAuth();
+  const reportsQuery = useQuery({
+    queryKey: ['reports-overview', activeInstitutionId, user?.id, '', ''],
+    enabled: Boolean(user && activeInstitutionId),
+    queryFn: async () => {
+      if (!activeInstitutionId) throw new Error('No active institution');
+      return getReportsOverviewFn({ data: { institutionId: activeInstitutionId }, headers: authHeaders() });
+    },
+  });
+  const totals = reportsQuery.data?.totals;
+  const firstName = (workspace?.profile.full_name || '').trim().split(/\s+/)[0];
+  const gradedPct = totals && totals.submissions > 0 ? Math.round((totals.graded / totals.submissions) * 100) : null;
   const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
 
   return (
@@ -67,6 +82,22 @@ function TeacherWorkspacePage() {
             }
           />
 
+          {totals && (
+            <HeroBanner
+              className="mb-6"
+              eyebrow={new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+              title={`${greetingForHour(new Date().getHours())}${firstName ? `, ${firstName}` : ''}.`}
+              subtitle={totals.needsAction > 0
+                ? `${totals.needsAction} student attempt${totals.needsAction === 1 ? '' : 's'} need${totals.needsAction === 1 ? 's' : ''} your marking or sign-off.`
+                : totals.exams > 0 ? 'You are all caught up on grading.' : 'Create your first exam to get started.'}
+              actions={totals.needsAction > 0 ? (
+                <Button asChild className="bg-gold text-navy hover:bg-gold-light"><Link to="/app/grading-queue"><ClipboardCheck className="h-4 w-4" /> Open grading queue</Link></Button>
+              ) : (
+                <Button asChild className="bg-gold text-navy hover:bg-gold-light"><Link to="/app/exams"><FileText className="h-4 w-4" /> Create an exam</Link></Button>
+              )}
+              aside={<><ProgressRing value={gradedPct} label="graded" /><ProgressRing value={totals.passRate} label="pass rate" /></>}
+            />
+          )}
           <TeacherExamDashboard onSelectExam={(id) => setSelectedExamId(id)} />
         </>
       )}
