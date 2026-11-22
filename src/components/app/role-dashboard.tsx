@@ -18,6 +18,7 @@ import { StatCard } from './stat-card';
 import { ErrorState, LoadingState } from './states';
 import { StatusPill } from './status-pill';
 import { RoleGuard } from './role-guard';
+import { ProgressRing } from './progress-ring';
 import { useAuth } from '@/lib/auth';
 import { getInstitutionWorkspaceFn } from '@/lib/workspace.functions';
 import { getReportsOverviewFn } from '@/lib/reports.functions';
@@ -30,10 +31,15 @@ const QUICK_ACTIONS = [
   { to: '/app/question-bank', label: 'Build the question bank', icon: BookOpen },
 ] as const;
 
+function greeting(): string {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+}
+
 type Attention = { key: string; text: string; to: string; cta: string };
 
 export function RoleDashboard({ role }: { role: Exclude<RoleKey, 'super-admin'> }) {
-  const { user, activeInstitutionId, activeMembership, authHeaders } = useAuth();
+  const { user, activeInstitutionId, activeMembership, authHeaders, workspace } = useAuth();
   const enabled = Boolean(user && activeInstitutionId);
 
   const workspaceQuery = useQuery({
@@ -61,15 +67,10 @@ export function RoleDashboard({ role }: { role: Exclude<RoleKey, 'super-admin'> 
   const activeMembers = data?.members.filter((m) => m.status === 'active').length ?? 0;
   const pendingInvites = data?.invitations.filter((i) => i.status === 'pending').length ?? 0;
 
+  const firstName = (workspace?.profile.full_name || '').trim().split(/\s+/)[0];
+  const gradedPct = reports && reports.totals.submissions > 0
+    ? Math.round((reports.totals.graded / reports.totals.submissions) * 100) : null;
   const attention: Attention[] = [];
-  if (reports && reports.totals.needsAction > 0) {
-    attention.push({
-      key: 'grading',
-      text: `${reports.totals.needsAction} student attempt${reports.totals.needsAction === 1 ? '' : 's'} waiting for grading or publication`,
-      to: '/app/grading-queue',
-      cta: 'Open grading queue',
-    });
-  }
   if (pendingInvites > 0) {
     attention.push({
       key: 'invites',
@@ -103,6 +104,33 @@ export function RoleDashboard({ role }: { role: Exclude<RoleKey, 'super-admin'> 
         />
       ) : (
         <div className="space-y-6">
+          <section aria-label="Summary" className="ef-banner ef-rise relative overflow-hidden rounded-2xl p-6 text-white shadow-elegant sm:p-8">
+            <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-xl">
+                <p className="text-xs font-semibold uppercase tracking-[.2em] text-gold">{new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                <h2 className="mt-2 font-display text-3xl font-medium tracking-tight sm:text-4xl">
+                  {greeting()}{firstName ? `, ${firstName}` : ''}.
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-white/75">
+                  {reports && reports.totals.needsAction > 0
+                    ? `${reports.totals.needsAction} attempt${reports.totals.needsAction === 1 ? ' is' : 's are'} waiting on your team. Clearing them lets students see results sooner.`
+                    : 'Your grading is up to date. A good moment to schedule the next exam.'}
+                </p>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <Button asChild className="bg-gold text-navy hover:bg-gold-light"><Link to="/app/exams"><FileText className="h-4 w-4" /> Schedule an exam</Link></Button>
+                  {reports && reports.totals.needsAction > 0
+                    ? <Button asChild variant="outline" className="border-white/30 bg-white/5 text-white hover:bg-white/10 hover:text-white"><Link to="/app/grading-queue"><ClipboardCheck className="h-4 w-4" /> Open grading queue</Link></Button>
+                    : <Button asChild variant="outline" className="border-white/30 bg-white/5 text-white hover:bg-white/10 hover:text-white"><Link to="/app/reports">View reports</Link></Button>}
+                </div>
+              </div>
+              <div className="flex items-center gap-5 text-white">
+                <ProgressRing value={gradedPct} label="graded" />
+                <ProgressRing value={reports?.totals.passRate ?? null} label="pass rate" />
+              </div>
+            </div>
+            <div aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gold/10 blur-2xl" />
+          </section>
+
           {attention.length > 0 ? (
             <section aria-label="Needs your attention" className="rounded-xl border border-gold/50 bg-gold/10 p-4">
               <h2 className="flex items-center gap-2 text-sm font-semibold">
@@ -119,11 +147,7 @@ export function RoleDashboard({ role }: { role: Exclude<RoleKey, 'super-admin'> 
                 ))}
               </ul>
             </section>
-          ) : (
-            <p className="rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground">
-              Nothing needs your attention right now.
-            </p>
-          )}
+          ) : null}
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <StatCard label="Active members" value={String(activeMembers)} icon={Users} hint={`${data?.members.length ?? 0} records`} />
