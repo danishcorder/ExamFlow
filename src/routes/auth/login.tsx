@@ -9,15 +9,9 @@ import { Label } from '@/components/ui/label';
 import { AuthCard, FieldError } from '@/components/app/auth-layout';
 import { ErrorState } from '@/components/app/states';
 import { supabase } from '@/integrations/supabase/client';
-import { getWorkspaceBootstrapFn } from '@/lib/workspace.functions';
-import { dbRoleToRoleKey, ROLES } from '@/lib/roles';
-import { safeAuthRedirectPath } from '@/lib/oauth-consent';
+import { signInWithUsernameFn } from '@/lib/provisioning.functions';
 
 export const Route = createFileRoute('/auth/login')({
-  validateSearch: (search: Record<string, unknown>): { redirect?: string | undefined } => {
-    const safe = safeAuthRedirectPath(search['redirect']);
-    return safe ? { redirect: safe } : {};
-  },
   head: () => ({
     meta: [
       { title: 'Sign in — ExamFlow' },
@@ -30,13 +24,16 @@ export const Route = createFileRoute('/auth/login')({
 });
 
 const schema = z.object({
-  email: z.string().trim().email('Enter a valid email'),
-  password: z.string().min(1, 'Enter your password'),
+  username: z
+    .string()
+    .trim()
+    .min(3, 'Enter your username')
+    .max(32, 'Username must be 32 characters or fewer'),
+  password: z.string().min(1, 'Enter your password').max(72),
 });
 
 function Login() {
   const navigate = useNavigate();
-  const { redirect } = Route.useSearch();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -47,40 +44,25 @@ function Login() {
     const parsed = schema.safeParse(Object.fromEntries(new FormData(e.currentTarget)));
     if (!parsed.success) {
       setErrors(
-        Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0] ?? ''), i.message])),
+        Object.fromEntries(parsed.error.issues.map((issue) => [String(issue.path[0] ?? ''), issue.message])),
       );
       return;
     }
+
     setErrors({});
     setBusy(true);
-    const { data, error: signInErr } = await supabase.auth.signInWithPassword(parsed.data);
-    if (signInErr || !data.session) {
-      setBusy(false);
-      setError(signInErr?.message ?? 'Invalid credentials');
-      return;
-    }
-
     try {
-      if (redirect) {
-        toast.success('Welcome back');
-        void navigate({ href: redirect });
-        return;
-      }
-      const bootstrap = await getWorkspaceBootstrapFn({
-        headers: { Authorization: `Bearer ${data.session.access_token}` },
+      const result = await signInWithUsernameFn({ data: parsed.data });
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: result.accessToken,
+        refresh_token: result.refreshToken,
       });
+      if (sessionError) throw new Error('Could not start your session. Please try again.');
       toast.success('Welcome back');
-      const firstMembership = bootstrap.memberships[0];
-      if (firstMembership) {
-        void navigate({ to: ROLES[dbRoleToRoleKey(firstMembership.role)].path });
-      } else if (bootstrap.isSuperAdmin) {
-        void navigate({ to: '/app/super-admin' });
-      } else {
-        void navigate({ to: '/app/onboarding' });
-      }
-    } catch {
-      toast.success('Welcome back');
-      void navigate({ to: '/app/onboarding' });
+      const destination = result.mustChangePassword ? '/auth/change-password' : result.redirectTo;
+      void navigate({ href: destination });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not sign in. Check your username and password.');
     } finally {
       setBusy(false);
     }
@@ -89,27 +71,32 @@ function Login() {
   return (
     <AuthCard
       title="Sign in"
-      description="Access your institution's ExamFlow workspace."
+      description="Use the username and password provided by your administrator."
       footer={
-        <>
-          New institution?{' '}
-          <Link to="/auth/register" className="font-medium text-primary hover:underline">
-            Create an account
-          </Link>
-        </>
+        <span className="text-sm text-muted-foreground">
+          Need an account? Ask your Super Admin or Institution Admin to create one.
+        </span>
       }
     >
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
-        {error && <ErrorState title="Couldn't sign in" description={error} />}
+        {error && <ErrorState title="Could not sign in" description={error} />}
         <div>
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" autoComplete="email" className="mt-1.5" />
-          <FieldError msg={errors['email']} />
+          <Label htmlFor="username">Username</Label>
+          <Input
+            id="username"
+            name="username"
+            type="text"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            className="mt-1.5"
+          />
+          <FieldError msg={errors['username']} />
         </div>
         <div>
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
-            <Link to="/auth/forgot-password" className="text-xs text-primary hover:underline">
+            <Link to="/auth/forgot-password" className="text-xs underline underline-offset-4">
               Forgot password?
             </Link>
           </div>
