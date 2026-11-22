@@ -13,7 +13,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DemoExamRouteImport } from './routes/demo-exam'
+import { Route as FeaturesRouteImport } from './routes/features'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as RolesRouteImport } from './routes/roles'
+import { Route as SecurityRouteImport } from './routes/security'
 import { Route as AppAcademicsRouteImport } from './routes/app/academics'
 import { Route as AppAssignmentsRouteImport } from './routes/app/assignments'
 import { Route as AppAuditLogRouteImport } from './routes/app/audit-log'
@@ -62,9 +66,29 @@ const DemoExamRoute = DemoExamRouteImport.update({
   path: '/demo-exam',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FeaturesRoute = FeaturesRouteImport.update({
+  id: '/features',
+  path: '/features',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RolesRoute = RolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppAcademicsRoute = AppAcademicsRouteImport.update({
@@ -208,7 +232,11 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteRouteWithChildren
   '/demo': typeof DemoRouteWithChildren
   '/demo-exam': typeof DemoExamRoute
+  '/features': typeof FeaturesRoute
+  '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/roles': typeof RolesRoute
+  '/security': typeof SecurityRoute
   '/app/academics': typeof AppAcademicsRoute
   '/app/assignments': typeof AppAssignmentsRoute
   '/app/audit-log': typeof AppAuditLogRoute
@@ -241,7 +269,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
   '/demo-exam': typeof DemoExamRoute
+  '/features': typeof FeaturesRoute
+  '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/roles': typeof RolesRoute
+  '/security': typeof SecurityRoute
   '/app/academics': typeof AppAcademicsRoute
   '/app/assignments': typeof AppAssignmentsRoute
   '/app/audit-log': typeof AppAuditLogRoute
@@ -276,7 +308,11 @@ export interface FileRoutesById {
   '/app': typeof AppRouteRouteWithChildren
   '/demo': typeof DemoRouteWithChildren
   '/demo-exam': typeof DemoExamRoute
+  '/features': typeof FeaturesRoute
+  '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/roles': typeof RolesRoute
+  '/security': typeof SecurityRoute
   '/app/academics': typeof AppAcademicsRoute
   '/app/assignments': typeof AppAssignmentsRoute
   '/app/audit-log': typeof AppAuditLogRoute
@@ -312,7 +348,11 @@ export interface FileRouteTypes {
     | '/app'
     | '/demo'
     | '/demo-exam'
+    | '/features'
+    | '/pricing'
     | '/reset-password'
+    | '/roles'
+    | '/security'
     | '/app/academics'
     | '/app/assignments'
     | '/app/audit-log'
@@ -345,7 +385,11 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/demo-exam'
+    | '/features'
+    | '/pricing'
     | '/reset-password'
+    | '/roles'
+    | '/security'
     | '/app/academics'
     | '/app/assignments'
     | '/app/audit-log'
@@ -379,7 +423,11 @@ export interface FileRouteTypes {
     | '/app'
     | '/demo'
     | '/demo-exam'
+    | '/features'
+    | '/pricing'
     | '/reset-password'
+    | '/roles'
+    | '/security'
     | '/app/academics'
     | '/app/assignments'
     | '/app/audit-log'
@@ -414,7 +462,11 @@ export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
   DemoRoute: typeof DemoRouteWithChildren
   DemoExamRoute: typeof DemoExamRoute
+  FeaturesRoute: typeof FeaturesRoute
+  PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  RolesRoute: typeof RolesRoute
+  SecurityRoute: typeof SecurityRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
@@ -451,11 +503,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoExamRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/features': {
+      id: '/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof FeaturesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roles': {
+      id: '/roles'
+      path: '/roles'
+      fullPath: '/roles'
+      preLoaderRoute: typeof RolesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/academics': {
@@ -719,7 +799,11 @@ const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
   DemoRoute: DemoRouteWithChildren,
   DemoExamRoute: DemoExamRoute,
+  FeaturesRoute: FeaturesRoute,
+  PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  RolesRoute: RolesRoute,
+  SecurityRoute: SecurityRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,

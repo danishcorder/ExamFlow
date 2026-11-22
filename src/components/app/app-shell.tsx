@@ -130,13 +130,13 @@ function SidebarBody({
 
   return (
     <div className="workspace-sidebar flex h-full flex-col bg-sidebar">
-      <div className="flex h-16 items-center px-5">
+      <div className="flex min-h-16 shrink-0 items-center px-5 py-3">
         <Brand inverted />
       </div>
-      <div className="truncate px-5 pb-2 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
+      <div className="shrink-0 truncate px-5 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
         {headerLabel}
       </div>
-      <nav className="flex-1 space-y-1 px-3">
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pb-2">
         {navItems.map((i) => (
           <NavLink key={i.label} item={i} onNavigate={onNavigate} />
         ))}
@@ -147,7 +147,7 @@ function SidebarBody({
           />
         )}
       </nav>
-      <div className="space-y-1 border-t border-sidebar-border px-3 py-4">
+      <div className="shrink-0 space-y-1 border-t border-sidebar-border px-3 py-3">
         {WORKSPACE_UTILITY_NAV.map((item) => (
           <NavLink
             key={item.label}
@@ -157,7 +157,7 @@ function SidebarBody({
           />
         ))}
       </div>
-      <div className="flex items-center gap-2 border-t border-sidebar-border px-5 py-3 text-[10px] font-semibold uppercase tracking-[.12em] text-sidebar-foreground/50">
+      <div className="flex shrink-0 items-center gap-2 border-t border-sidebar-border px-5 py-3 text-[10px] font-semibold uppercase tracking-[.12em] text-sidebar-foreground/50">
         <ShieldCheck className="h-3.5 w-3.5 text-gold" /> Secure workspace
       </div>
     </div>
