@@ -25,3 +25,14 @@ describe('findBadSupabaseEnv', () => {
     expect(findBadSupabaseEnv('https://x.supabase.co', 'two words')).toEqual(['VITE_SUPABASE_PUBLISHABLE_KEY']);
   });
 });
+
+import { describeSupabaseEnvProblems } from '@/lib/supabase-env';
+describe('describeSupabaseEnvProblems', () => {
+  it('says why, never echoing the value', () => {
+    expect(describeSupabaseEnvProblems('https://a.supabase.co', undefined)).toEqual([{ name: 'VITE_SUPABASE_PUBLISHABLE_KEY', reason: 'not set or empty' }]);
+    const bad = describeSupabaseEnvProblems('https://a.supabase.co', 'sb_publishable_abc…def');
+    expect(bad).toEqual([{ name: 'VITE_SUPABASE_PUBLISHABLE_KEY', reason: 'contains spaces or unsupported characters' }]);
+    expect(JSON.stringify(bad)).not.toContain('abc');
+    expect(describeSupabaseEnvProblems('https://a.supabase.co', 'k')).toEqual([]);
+  });
+});
