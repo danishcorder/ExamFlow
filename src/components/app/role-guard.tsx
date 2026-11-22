@@ -62,13 +62,10 @@ export function RoleGuard({
   const isSuperAdmin = workspace?.isSuperAdmin ?? false;
   const activeRoleKey = activeMembership ? dbRoleToRoleKey(activeMembership.role) : null;
   const permitted = allowedRoles ?? (requiredRole ? [requiredRole] : []);
-
   const isAuthorized =
-    permitted.length === 0
-      ? true
-      : permitted.includes('super-admin')
-        ? isSuperAdmin
-        : isSuperAdmin || (activeRoleKey !== null && permitted.includes(activeRoleKey));
+    permitted.length === 0 ||
+    isSuperAdmin ||
+    (activeRoleKey !== null && permitted.includes(activeRoleKey));
 
   if (!isAuthorized) {
     const fallbackTo = activeRoleKey
@@ -76,8 +73,7 @@ export function RoleGuard({
       : isSuperAdmin
         ? ROLES['super-admin'].path
         : '/app/onboarding';
-
-    const labelText = permitted.map((r) => ROLES[r].label).join(' or ');
+    const labelText = permitted.map((role) => ROLES[role].label).join(' or ');
 
     return (
       <Card className="border-destructive/30 shadow-none">
@@ -97,7 +93,7 @@ export function RoleGuard({
             <Button asChild>
               <Link to={fallbackTo}>
                 <Building2 className="h-4 w-4" />
-                {activeMembership ? 'Go to my workspace' : 'Set up or join an institution'}
+                {activeMembership ? 'Go to my workspace' : 'Request institution access'}
               </Link>
             </Button>
           </div>
