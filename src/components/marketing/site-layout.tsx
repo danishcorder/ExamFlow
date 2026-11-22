@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
-import { ArrowUpRight, Building2, Menu, X } from 'lucide-react';
+import { Building2, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Brand } from '@/components/app/brand';
 
@@ -24,7 +24,6 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
           <p className="flex items-center gap-2"><Building2 className="h-3.5 w-3.5 text-gold" /><span>Assessment, thoughtfully managed</span></p>
           <div className="hidden items-center gap-5 sm:flex">
             <Link to="/demo">Explore the demo</Link>
-            <Link to="/auth/login">Student / teacher login</Link>
           </div>
         </div>
       </div>
@@ -38,8 +37,7 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="hidden items-center gap-2 lg:flex">
-            <Button asChild variant="outline" className="border-navy/20 bg-transparent px-5"><Link to="/auth/login">Log in</Link></Button>
-            <Button asChild className="px-5 shadow-elegant"><Link to="/auth/register">Get started <ArrowUpRight className="h-4 w-4" /></Link></Button>
+            <Button asChild className="px-5 shadow-elegant"><Link to="/demo">Explore demo</Link></Button>
           </div>
           <button type="button" className="rounded-md p-2 lg:hidden" aria-label={open ? 'Close menu' : 'Open menu'}
             aria-expanded={open} aria-controls="mobile-nav" onClick={() => setOpen((o) => !o)}>
@@ -55,10 +53,6 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
               ))}
               <Link to="/demo" onClick={() => setOpen(false)} className={linkBase}>Explore the demo</Link>
             </div>
-            <div className="grid grid-cols-2 gap-2 border-t pt-4">
-              <Button asChild variant="outline"><Link to="/auth/login" onClick={() => setOpen(false)}>Log in</Link></Button>
-              <Button asChild><Link to="/auth/register" onClick={() => setOpen(false)}>Get started</Link></Button>
-            </div>
           </nav>
         )}
       </header>
@@ -66,9 +60,9 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
       <footer className="portal-footer">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div><Brand inverted /><p className="mt-4 max-w-xs text-sm leading-6 text-white/55">A secure examination workspace for schools, colleges and universities.</p></div>
-          <div><p className="footer-heading">Product</p><Link to="/features">Features</Link><Link to="/roles">Who it’s for</Link><Link to="/pricing">Plans</Link></div>
-          <div><p className="footer-heading">Try it</p><Link to="/demo-exam">Sample ICT exam</Link><Link to="/demo">Demo workspace</Link><Link to="/security">Trust & security</Link></div>
-          <div><p className="footer-heading">Account</p><Link to="/auth/login">Log in</Link><Link to="/auth/register">Create account</Link></div>
+          <div><p class="footer-heading">Product</p><Link to="/features">Features</Link><Link to="/roles">Who it’s for</Link><Link to="/pricing">Plans</Link></div>
+          <div><p class="footer-heading">Try it</p><Link to="/demo-exam">Sample ICT exam</Link><Link to="/demo">Demo workspace</Link><Link to="/security">Trust & security</Link></div>
+          <div><p class="footer-heading">Account</p><span className="text-white/55">Admin access is hidden</span></div>
           <div className="border-t border-white/10 pt-5 text-xs text-white/45 md:col-span-4 md:flex md:items-center md:justify-between md:pt-6">
             <span>© {new Date().getFullYear()} ExamFlow. All rights reserved.</span><span>Designed for secure assessment.</span>
           </div>
@@ -99,7 +93,7 @@ export function CtaBand() {
           <h2 className="mt-2 max-w-2xl font-display text-3xl font-medium tracking-tight text-white sm:text-4xl">Make every assessment feel more considered.</h2>
         </div>
         <div className="flex shrink-0 flex-wrap gap-3">
-          <Button asChild size="lg" className="bg-gold px-6 text-navy hover:bg-gold-light"><Link to="/auth/register">Get started</Link></Button>
+          <Button asChild size="lg" className="bg-gold px-6 text-navy hover:bg-gold-light"><Link to="/demo-exam">Try a sample exam</Link></Button>
           <Button asChild size="lg" variant="outline" className="border-white/30 bg-white/5 text-white hover:bg-white/10 hover:text-white"><Link to="/demo">Explore the demo</Link></Button>
         </div>
       </div>
