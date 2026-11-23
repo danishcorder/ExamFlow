@@ -9,13 +9,13 @@ import {
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { isSupabaseConfigured, supabase } from '@/integrations/supabase/client';
 import { getWorkspaceBootstrapFn } from '@/lib/workspace.functions';
 import type {
   MembershipWithInstitution,
   WorkspaceBootstrap,
 } from '@/lib/workspace.server';
 import { dbRoleToRoleKey, type RoleKey } from '@/lib/roles';
+import { AUTH_MODE } from '@/lib/auth-mode';
 
 type AuthState = {
   user: User | null;
@@ -44,29 +44,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!isSupabaseConfigured) {
+    let cancelled = false;
+    let unsubscribe: (() => void) | null = null;
+    if (AUTH_MODE === 'none') {
       setLoading(false);
       return;
     }
 
-    const { data } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s);
-      setLoading(false);
-      if (!s) {
-        setSelectedInstitutionId(null);
-        queryClient.removeQueries({ queryKey: ['workspace-bootstrap'] });
+    void import('@/integrations/supabase/client').then(({ isSupabaseConfigured, supabase }) => {
+      if (cancelled) return;
+      if (!isSupabaseConfigured) {
+        setLoading(false);
+        return;
       }
-    });
-    supabase.auth
-      .getSession()
-      .then(({ data: sessionRes }) => {
-        setSession(sessionRes.session);
+
+      const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+        if (cancelled) return;
+        setSession(nextSession);
         setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
+        if (!nextSession) {
+          setSelectedInstitutionId(null);
+          queryClient.removeQueries({ queryKey: ['workspace-bootstrap'] });
+        }
       });
-    return () => data.subscription.unsubscribe();
+      unsubscribe = () => data.subscription.unsubscribe();
+      void supabase.auth.getSession()
+        .then(({ data: sessionResult }) => {
+          if (cancelled) return;
+          setSession(sessionResult.session);
+          setLoading(false);
+        })
+        .catch(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }).catch(() => {
+      if (!cancelled) setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [queryClient]);
 
   const user = session?.user ?? null;
@@ -79,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const bootstrapQuery = useQuery({
     queryKey: ['workspace-bootstrap', user?.id],
-    enabled: Boolean(user && accessToken),
+    enabled: AUTH_MODE === 'supabase' && Boolean(user && accessToken),
     staleTime: 30_000,
     retry: false,
     queryFn: async () => {
@@ -92,36 +110,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const workspace = bootstrapQuery.data ?? null;
 
-  // Restore saved institution selection ONLY if it exists in the server-verified memberships list.
   useEffect(() => {
-    if (!user || !workspace) return;
-    const validIds = new Set(workspace.memberships.map((m) => m.institution_id));
-    if (selectedInstitutionId && validIds.has(selectedInstitutionId)) {
-      return;
-    }
+    if (AUTH_MODE === 'none' || !user || !workspace) return;
+    const validIds = new Set(workspace.memberships.map((membership) => membership.institution_id));
+    if (selectedInstitutionId && validIds.has(selectedInstitutionId)) return;
     let stored: string | null = null;
     try {
       stored = localStorage.getItem(`${ACTIVE_INST_STORAGE_PREFIX}${user.id}`);
     } catch {
       stored = null;
     }
-    if (stored && validIds.has(stored)) {
-      setSelectedInstitutionId(stored);
-    } else {
-      setSelectedInstitutionId(workspace.memberships[0]?.institution_id ?? null);
-    }
+    if (stored && validIds.has(stored)) setSelectedInstitutionId(stored);
+    else setSelectedInstitutionId(workspace.memberships[0]?.institution_id ?? null);
   }, [user, workspace, selectedInstitutionId]);
 
   const setActiveInstitutionId = useCallback(
     (institutionId: string) => {
-      if (!workspace || !user) return;
-      const isMember = workspace.memberships.some((m) => m.institution_id === institutionId);
-      if (!isMember) return; // Ignore untrusted / non-member institution IDs
+      if (AUTH_MODE === 'none' || !workspace || !user) return;
+      const isMember = workspace.memberships.some((membership) => membership.institution_id === institutionId);
+      if (!isMember) return;
       setSelectedInstitutionId(institutionId);
       try {
         localStorage.setItem(`${ACTIVE_INST_STORAGE_PREFIX}${user.id}`, institutionId);
       } catch {
-        // Ignore storage write errors in private browsing
+        // Ignore storage write errors in private browsing.
       }
     },
     [workspace, user],
@@ -130,7 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const activeMembership = useMemo(() => {
     if (!workspace) return null;
     if (selectedInstitutionId) {
-      const found = workspace.memberships.find((m) => m.institution_id === selectedInstitutionId);
+      const found = workspace.memberships.find((membership) => membership.institution_id === selectedInstitutionId);
       if (found) return found;
     }
     return workspace.memberships[0] ?? null;
@@ -145,13 +157,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [activeMembership, workspace]);
 
   const refreshWorkspace = useCallback(async () => {
+    if (AUTH_MODE === 'none') return;
     await queryClient.invalidateQueries({ queryKey: ['workspace-bootstrap', user?.id] });
     await queryClient.invalidateQueries({ queryKey: ['institution-workspace'] });
     await queryClient.invalidateQueries({ queryKey: ['platform-overview'] });
   }, [queryClient, user?.id]);
 
   const signOut = useCallback(async () => {
-    if (isSupabaseConfigured) await supabase.auth.signOut();
+    if (AUTH_MODE === 'supabase') {
+      const { isSupabaseConfigured, supabase } = await import('@/integrations/supabase/client');
+      if (isSupabaseConfigured) await supabase.auth.signOut();
+    }
     setSelectedInstitutionId(null);
     queryClient.clear();
   }, [queryClient]);
@@ -167,12 +183,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         session,
         user,
-        loading,
+        loading: AUTH_MODE === 'none' ? false : loading,
         signOut,
         authHeaders,
         workspace,
-        workspaceLoading: Boolean(user) && bootstrapQuery.isLoading,
-        workspaceError,
+        workspaceLoading: AUTH_MODE === 'none' ? false : Boolean(user) && bootstrapQuery.isLoading,
+        workspaceError: AUTH_MODE === 'none' ? null : workspaceError,
         activeInstitutionId,
         activeMembership,
         activeRoleKey,
@@ -186,7 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
-  return ctx;
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used inside AuthProvider');
+  return context;
 }

@@ -1,12 +1,9 @@
 import { createMiddleware } from '@tanstack/react-start';
-import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Global client middleware: attaches the *current* Supabase access token to every
- * server-function call. Reading the session at call time (instead of from a React
- * closure) avoids stale or missing tokens after refresh. Headers passed explicitly
- * by a caller still take precedence. Authorization is still verified server-side
- * by `requireSupabaseAuth`; this only transports the token.
+ * Read the current session when a server function runs. This middleware is only
+ * installed in Supabase mode; the client import is lazy so local mode creates no
+ * Supabase client.
  */
 export async function buildAuthHeaders(
   getSession: () => Promise<{ data: { session: { access_token: string } | null } }>,
@@ -21,6 +18,7 @@ export async function buildAuthHeaders(
 }
 
 export const attachSupabaseAuth = createMiddleware({ type: 'function' }).client(async ({ next }) => {
+  const { supabase } = await import('@/integrations/supabase/client');
   const headers = await buildAuthHeaders(() => supabase.auth.getSession());
   return next({ headers });
 });

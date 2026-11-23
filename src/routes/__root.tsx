@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
+  Navigate,
   createRootRouteWithContext,
   useRouter,
   useRouterState,
@@ -14,6 +15,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "@/lib/auth";
+import { AUTH_MODE } from "@/lib/auth-mode";
 import { Toaster } from "@/components/ui/sonner";
 import { isAssistantHiddenOn } from "@/lib/assistant-visibility";
 
@@ -79,9 +81,6 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    // Replace these placeholders with the app's name and description when first building the app.
-    // Each content route, / included, must still set its own head(). Never add og:image or
-    // twitter:image here: every page without its own would inherit the root's preview image.
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
@@ -93,10 +92,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/examflow-mark.svg", type: "image/svg+xml" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
@@ -125,8 +121,6 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function ZapierChatbot() {
   useEffect(() => {
-    // Load the third-party widget only on routes where it can be used. Direct exam loads
-    // therefore do not fetch or execute the chatbot script at all.
     if (!document.querySelector('script[data-examflow-zapier="true"]')) {
       const script = document.createElement("script");
       script.type = "module";
@@ -147,13 +141,13 @@ function ZapierChatbot() {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const showAssistant = !isAssistantHiddenOn(pathname);
+  const redirectToLocalApp = AUTH_MODE === 'none' && !pathname.startsWith('/app');
+  const showAssistant = AUTH_MODE === 'supabase' && !isAssistantHiddenOn(pathname);
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <AuthProvider>
-        <Outlet />
+        {redirectToLocalApp ? <Navigate to="/app" replace /> : <Outlet />}
         {showAssistant ? <ZapierChatbot /> : null}
         <Toaster richColors position="top-right" />
       </AuthProvider>
