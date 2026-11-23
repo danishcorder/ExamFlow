@@ -19,13 +19,18 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
   }
 });
 
-// Keep CSRF protection enabled for server functions in both modes. Local-mode UI
-// does not call server functions, and the Supabase auth middleware is not installed.
 const csrfMiddleware = createCsrfMiddleware({
   filter: (ctx) => ctx.handlerType === "serverFn",
 });
 
+// Keep API-backed server functions unavailable in local mode. This rejects a
+// direct request before any protected handler can create a Supabase client.
+const blockServerFunctionsInLocalMode = createMiddleware({ type: 'function' }).server(async ({ next }) => {
+  if (AUTH_MODE === 'none') throw new Error('Server functions are disabled in local mode.');
+  return next();
+});
+
 export const startInstance = createStart(() => ({
   requestMiddleware: [errorMiddleware, csrfMiddleware],
-  functionMiddleware: AUTH_MODE === 'supabase' ? [attachSupabaseAuth] : [],
+  functionMiddleware: AUTH_MODE === 'supabase' ? [attachSupabaseAuth] : [blockServerFunctionsInLocalMode],
 }));
