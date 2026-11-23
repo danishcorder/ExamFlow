@@ -36,3 +36,13 @@ describe('describeSupabaseEnvProblems', () => {
     expect(describeSupabaseEnvProblems('https://a.supabase.co', 'k')).toEqual([]);
   });
 });
+
+import { isInvalidApiKeyError } from '@/lib/supabase-env';
+describe('isInvalidApiKeyError', () => {
+  it('detects key problems but not ordinary errors', () => {
+    expect(isInvalidApiKeyError({ status: 401, message: 'Invalid API key' })).toBe(true);
+    expect(isInvalidApiKeyError({ message: 'JWT expired' })).toBe(true);
+    expect(isInvalidApiKeyError({ code: 'PGRST116', message: 'no rows' })).toBe(false);
+    expect(isInvalidApiKeyError(null)).toBe(false);
+  });
+});

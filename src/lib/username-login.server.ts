@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/integrations/supabase/client.server';
+import { cleanEnvValue, isInvalidApiKeyError } from '@/lib/supabase-env';
 
 const admin: any = supabaseAdmin;
 const INVALID_LOGIN = 'Invalid username or password';
@@ -20,9 +21,9 @@ function authFetch(apiKey: string): typeof fetch {
 }
 
 function createPasswordAuthClient() {
-  const url = process.env['SUPABASE_URL'] ?? process.env['VITE_SUPABASE_URL'];
+  const url = cleanEnvValue(process.env['SUPABASE_URL']) ?? cleanEnvValue(process.env['VITE_SUPABASE_URL']);
   const key =
-    process.env['SUPABASE_PUBLISHABLE_KEY'] ?? process.env['VITE_SUPABASE_PUBLISHABLE_KEY'];
+    cleanEnvValue(process.env['SUPABASE_PUBLISHABLE_KEY']) ?? cleanEnvValue(process.env['VITE_SUPABASE_PUBLISHABLE_KEY']);
   if (!url || !key) throw new Error('Supabase authentication is not configured');
   return createClient(url, key, {
     global: { fetch: authFetch(key) },
@@ -55,6 +56,13 @@ export async function signInWithUsername(input: {
     .select('id,email,must_change_password')
     .eq('username', username)
     .maybeSingle();
+  if (profileError && isInvalidApiKeyError(profileError)) {
+    // Misconfiguration, not a wrong password: say so (no secrets are included).
+    console.error('[sign-in] Supabase rejected SUPABASE_SERVICE_ROLE_KEY:', profileError.message);
+    throw new Error(
+      'Sign-in is unavailable: the server’s Supabase secret key (SUPABASE_SERVICE_ROLE_KEY) is invalid. Ask the administrator to re-copy it in Vercel and redeploy.',
+    );
+  }
   if (profileError || !profile?.email) throw new Error(INVALID_LOGIN);
 
   const auth = createPasswordAuthClient();
