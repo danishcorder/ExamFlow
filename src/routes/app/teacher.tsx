@@ -4,7 +4,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { BookOpen, ClipboardCheck, FileText } from 'lucide-react';
 import { HeroBanner, greetingForHour } from '@/components/app/hero-banner';
 import { ProgressRing } from '@/components/app/progress-ring';
-import { getReportsOverviewFn } from '@/lib/reports.functions';
+import { dataRepository } from '@/lib/data-repository';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/app/page-header';
 import { RoleGuard } from '@/components/app/role-guard';
@@ -39,7 +39,7 @@ function TeacherWorkspacePage() {
     enabled: Boolean(user && activeInstitutionId),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return getReportsOverviewFn({ data: { institutionId: activeInstitutionId }, headers: authHeaders() });
+      return dataRepository.getReportsOverview({ data: { institutionId: activeInstitutionId }, headers: authHeaders() });
     },
   });
   const totals = reportsQuery.data?.totals;

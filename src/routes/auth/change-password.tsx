@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, Navigate, useNavigate } from '@tanstack/react-router';
 import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthCard, FieldError } from '@/components/app/auth-layout';
 import { ErrorState } from '@/components/app/states';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
+import { AUTH_MODE } from '@/lib/auth-mode';
 import { changeOwnPasswordFn } from '@/lib/provisioning.functions';
 import { getWorkspaceBootstrapFn } from '@/lib/workspace.functions';
 import { dbRoleToRoleKey, ROLES } from '@/lib/roles';
@@ -40,6 +40,10 @@ function ChangePasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  if (AUTH_MODE === 'none') {
+    return <Navigate to="/app" replace />;
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -55,6 +59,7 @@ function ChangePasswordPage() {
     setBusy(true);
     try {
       await changeOwnPasswordFn({ data: { password: parsed.data.password } });
+      const { supabase } = await import('@/integrations/supabase/client');
       const { data: sessionData, error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError || !sessionData.session) {
         throw new Error('Your password was changed, but your session could not be refreshed. Sign in again with your new password.');

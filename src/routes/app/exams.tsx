@@ -48,11 +48,7 @@ import { TeacherGradingDashboard } from '@/components/app/teacher-grading-dashbo
 import { EmptyState, ErrorState, LoadingState } from '@/components/app/states';
 import type { ExamStatus } from '@/integrations/supabase/types';
 import { useAuth } from '@/lib/auth';
-import {
-  getExamBuilderCatalogFn,
-  getExamDetailFn,
-  listExamsFn,
-} from '@/lib/exams.functions';
+import { dataRepository } from '@/lib/data-repository';
 import type { ExamDetail } from '@/lib/exams.server';
 
 export const Route = createFileRoute('/app/exams')({
@@ -98,7 +94,7 @@ function ExamBuilderPage() {
     enabled: Boolean(user && activeInstitutionId),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return getExamBuilderCatalogFn({
+      return dataRepository.getExamBuilderCatalog({
         data: { institutionId: activeInstitutionId },
         headers: authHeaders(),
       });
@@ -117,7 +113,7 @@ function ExamBuilderPage() {
     enabled: Boolean(user && activeInstitutionId),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return listExamsFn({
+      return dataRepository.listExams({
         data: {
           institutionId: activeInstitutionId,
           ...(search.trim() ? { search: search.trim() } : {}),
@@ -150,7 +146,7 @@ function ExamBuilderPage() {
     setActiveExamId(examId);
     setLoadingDetail(true);
     try {
-      const detail = await getExamDetailFn({
+      const detail = await dataRepository.getExamDetail({
         data: { institutionId: activeInstitutionId, examId },
         headers: authHeaders(),
       });

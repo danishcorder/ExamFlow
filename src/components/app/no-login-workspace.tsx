@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRef } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { ArrowRight, Download, RotateCcw, ShieldAlert, Upload, Users } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -7,66 +10,33 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  localRepository,
-  type LocalCollection,
-  type LocalEntity,
-  type LocalRole,
-  type LocalSnapshot,
-} from '@/lib/local-repository';
+import { Brand } from './brand';
+import { useAuth } from '@/lib/auth';
+import { localRepository, type LocalRole } from '@/lib/local-repository';
+import { ROLES } from '@/lib/roles';
 
 const ROLE_OPTIONS: Array<{ role: LocalRole; label: string; description: string }> = [
-  { role: 'institution', label: 'Institution Admin', description: 'Manage sample academic records and review activity.' },
-  { role: 'teacher', label: 'Teacher', description: 'Review sample courses, exams, and grading records.' },
-  { role: 'student', label: 'Student', description: 'View sample exams and published results.' },
-  { role: 'invigilator', label: 'Invigilator', description: 'Review sample examination attempts.' },
+  {
+    role: 'institution',
+    label: 'Institution Admin',
+    description: 'Manage academics, courses, teacher assignments, students, exams, reports, and audit logs.',
+  },
+  {
+    role: 'teacher',
+    label: 'Teacher / Examiner',
+    description: 'Author questions, build and publish exams, grade responses, and review analytics.',
+  },
+  {
+    role: 'student',
+    label: 'Student',
+    description: 'Start and submit active exams with autosave and view published report cards.',
+  },
+  {
+    role: 'invigilator',
+    label: 'Invigilator',
+    description: 'Monitor attempt timelines, inspect browser incidents, and record review notes.',
+  },
 ];
-
-const ROLE_NAV: Record<LocalRole, string[]> = {
-  institution: ['Overview', 'Departments', 'Teachers', 'Students', 'Courses', 'Question bank', 'Exams', 'Audit log'],
-  teacher: ['Overview', 'Question bank', 'Exams', 'Grading', 'Reports'],
-  student: ['My exams', 'Results'],
-  invigilator: ['Overview', 'Attempts'],
-};
-
-const VIEW_COLLECTION: Record<string, LocalCollection> = {
-  Departments: 'departments',
-  Teachers: 'teachers',
-  Students: 'students',
-  Courses: 'courses',
-  'Question bank': 'questionBank',
-  Exams: 'exams',
-  'My exams': 'exams',
-  Grading: 'attempts',
-  Reports: 'reports',
-  'Audit log': 'auditLog',
-  Attempts: 'attempts',
-  Results: 'grades',
-};
-
-function displayName(record: LocalEntity): string {
-  for (const key of ['name', 'fullName', 'title', 'studentCode', 'code', 'action']) {
-    const value = record[key];
-    if (typeof value === 'string') return value;
-  }
-  return record.id;
-}
-
-function displayDetail(record: LocalEntity): string {
-  for (const key of ['email', 'code', 'courseId', 'status', 'resource', 'topic']) {
-    const value = record[key];
-    if (typeof value === 'string') return value;
-  }
-  return record.sample === true ? 'Sample record' : '';
-}
 
 function saveTextFile(filename: string, text: string) {
   const blob = new Blob([text], { type: 'application/json' });
@@ -78,143 +48,154 @@ function saveTextFile(filename: string, text: string) {
   URL.revokeObjectURL(url);
 }
 
-export function NoLoginWorkspace() {
-  const [snapshot, setSnapshot] = useState<LocalSnapshot | null>(null);
-  const [role, setRole] = useState<LocalRole | null>(null);
-  const [view, setView] = useState('Overview');
-  const importRef = useRef<HTMLInputElement>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-
-  useEffect(() => {
-    setSnapshot(localRepository.read());
-  }, []);
-
-  const collection = VIEW_COLLECTION[view];
-  const rows = useMemo(
-    () => snapshot && collection ? snapshot.data[collection] : [],
-    [collection, snapshot],
+export function NoLoginBanner() {
+  return (
+    <div
+      role="status"
+      className="border-b border-amber-300 bg-amber-100 px-4 py-2 text-center text-xs font-semibold text-amber-950 sm:text-sm dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"
+    >
+      Local mode: no login. Data stays in this browser only. Not for real examinations.
+    </div>
   );
+}
 
-  function switchRole(nextRole: LocalRole) {
-    setRole(nextRole);
-    setView(ROLE_NAV[nextRole][0] ?? 'Overview');
+export function NoLoginLocalControls({ showSwitchRole = true }: { showSwitchRole?: boolean }) {
+  const navigate = useNavigate();
+  const { localRole, setLocalRole, refreshWorkspace } = useAuth();
+  const importRef = useRef<HTMLInputElement>(null);
+
+  function handleSwitchRole() {
+    setLocalRole(null);
+    void navigate({ to: '/app' });
   }
 
-  function resetSampleData() {
+  async function handleReset() {
     if (!window.confirm('Reset all local data to the labelled sample dataset?')) return;
-    setSnapshot(localRepository.resetSampleData());
-    setNotice('Sample data restored in this browser.');
+    localRepository.resetSampleData();
+    await refreshWorkspace();
+    toast.success('Sample data restored in this browser.');
   }
 
-  async function importBackup(file: File | undefined) {
+  async function handleImport(file: File | undefined) {
     if (!file) return;
     try {
-      setSnapshot(localRepository.importJson(await file.text()));
-      setNotice('JSON backup imported into this browser.');
+      localRepository.importJson(await file.text());
+      await refreshWorkspace();
+      toast.success('JSON backup imported into this browser.');
     } catch {
-      setNotice('That file is not a valid ExamFlow JSON backup.');
+      toast.error('That file is not a valid ExamFlow JSON backup.');
     }
     if (importRef.current) importRef.current.value = '';
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div role="status" className="border-b bg-amber-100 px-4 py-2 text-center text-sm font-medium text-amber-950 dark:bg-amber-950 dark:text-amber-100">
-        Local mode: no login. Data stays in this browser only. Not for real examinations.
-      </div>
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-6">
-        <div className="min-w-0">
-          <h1 className="truncate text-base font-semibold">ExamFlow local workspace</h1>
-          <p className="text-xs text-muted-foreground">Riverside College (sample)</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {role ? <Button variant="outline" size="sm" onClick={() => setRole(null)}>Switch role</Button> : null}
-          <Button variant="outline" size="sm" onClick={resetSampleData}>Reset sample data</Button>
-          <Button variant="outline" size="sm" onClick={() => saveTextFile('examflow-local-backup.json', localRepository.exportJson())}>Export JSON</Button>
-          <Button variant="outline" size="sm" onClick={() => importRef.current?.click()}>Import JSON</Button>
-          <input
-            ref={importRef}
-            className="sr-only"
-            type="file"
-            accept="application/json,.json"
-            aria-label="Choose an ExamFlow JSON backup"
-            onChange={(event) => { void importBackup(event.currentTarget.files?.[0]); }}
-          />
-        </div>
-      </header>
-      {notice ? <p role="status" className="border-b px-4 py-2 text-sm text-muted-foreground sm:px-6">{notice}</p> : null}
+    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+      {showSwitchRole && localRole ? (
+        <Button variant="outline" size="sm" onClick={handleSwitchRole}>
+          <Users className="h-3.5 w-3.5" />
+          Switch role
+        </Button>
+      ) : null}
+      <Button variant="outline" size="sm" onClick={() => void handleReset()}>
+        <RotateCcw className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Reset sample data</span>
+        <span className="sm:hidden">Reset</span>
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => saveTextFile('examflow-local-backup.json', localRepository.exportJson())}
+      >
+        <Download className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Export JSON</span>
+        <span className="sm:hidden">Export</span>
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => importRef.current?.click()}>
+        <Upload className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Import JSON</span>
+        <span className="sm:hidden">Import</span>
+      </Button>
+      <input
+        ref={importRef}
+        className="sr-only"
+        type="file"
+        accept="application/json,.json"
+        aria-label="Choose an ExamFlow JSON backup"
+        onChange={(event) => {
+          void handleImport(event.currentTarget.files?.[0]);
+        }}
+      />
+    </div>
+  );
+}
 
-      <main className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
-        {!snapshot ? (
-          <p role="status" className="py-12 text-center text-sm text-muted-foreground">Loading local sample data…</p>
-        ) : role === null ? (
-          <section className="mx-auto max-w-3xl space-y-4">
-            <h2 className="text-lg font-semibold">Choose a role</h2>
-            <p className="text-sm text-muted-foreground">Each role opens a separate local sample workspace. No account is created.</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {ROLE_OPTIONS.map((option) => (
-                <Card key={option.role} className="shadow-none">
-                  <CardHeader>
-                    <CardTitle className="text-base">{option.label}</CardTitle>
-                    <CardDescription>{option.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button onClick={() => switchRole(option.role)}>Open {option.label} workspace</Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </section>
-        ) : (
-          <div className="space-y-6">
-            <section className="space-y-1">
-              <h2 className="text-lg font-semibold">{ROLE_OPTIONS.find((option) => option.role === role)?.label} workspace</h2>
-              <p className="text-sm text-muted-foreground">Sample records are marked and can be reset at any time.</p>
-            </section>
-            <nav aria-label="Local workspace navigation" className="flex gap-2 overflow-x-auto border-b pb-2">
-              {ROLE_NAV[role].map((item) => (
-                <Button key={item} variant={view === item ? 'secondary' : 'ghost'} size="sm" onClick={() => setView(item)}>{item}</Button>
-              ))}
-            </nav>
-            {view === 'Overview' ? (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {(['students', 'teachers', 'courses', 'exams'] as const).map((key) => (
-                  <Card key={key} className="shadow-none">
-                    <CardHeader className="pb-2"><CardDescription>{key}</CardDescription></CardHeader>
-                    <CardContent className="text-2xl font-semibold tabular-nums">{snapshot.data[key].length}</CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card className="shadow-none">
-                <CardHeader>
-                  <CardTitle className="text-base">{view}</CardTitle>
-                  <CardDescription>{rows.length} local sample record{rows.length === 1 ? '' : 's'}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {rows.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-muted-foreground">No local records yet.</p>
-                  ) : (
-                    <Table>
-                      <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Details</TableHead><TableHead>Record type</TableHead></TableRow></TableHeader>
-                      <TableBody>
-                        {rows.map((record) => (
-                          <TableRow key={record.id}>
-                            <TableCell className="font-medium">{displayName(record)}</TableCell>
-                            <TableCell className="text-muted-foreground">{displayDetail(record)}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{record.sample === true ? 'Sample' : 'Local'}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-        <p className="text-xs text-muted-foreground">Local mode is for demos and practice only. It does not provide production security, server verification, or examination integrity.</p>
+export function NoLoginRolePicker() {
+  const navigate = useNavigate();
+  const { setLocalRole } = useAuth();
+  const snap = localRepository.read();
+  const institutionName =
+    typeof snap.data.institution[0]?.['name'] === 'string'
+      ? snap.data.institution[0]['name']
+      : 'Riverside College (sample)';
+
+  function chooseRole(role: LocalRole) {
+    setLocalRole(role);
+    void navigate({ to: ROLES[role].path });
+  }
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <NoLoginBanner />
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-6">
+        <div className="flex items-center gap-3">
+          <Brand />
+          <span className="hidden h-4 w-px bg-border sm:inline-block" />
+          <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
+            {institutionName}
+          </span>
+        </div>
+        <NoLoginLocalControls showSwitchRole={false} />
+      </header>
+
+      <main className="mx-auto max-w-4xl space-y-6 p-4 py-8 sm:p-8">
+        <section className="space-y-2">
+          <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+            Choose a role workspace
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Explore ExamFlow locally in your browser with sample data for {institutionName}. No account or server connection is used.
+          </p>
+        </section>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {ROLE_OPTIONS.map((option) => (
+            <Card key={option.role} className="flex flex-col justify-between shadow-none">
+              <CardHeader>
+                <CardTitle className="text-lg">{option.label}</CardTitle>
+                <CardDescription>{option.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => chooseRole(option.role)} className="w-full sm:w-auto">
+                  Open {option.label}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="flex items-start gap-2.5 rounded-xl border bg-muted/40 p-4 text-xs text-muted-foreground">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          <p>
+            Local mode stores all edits in this browser&apos;s local storage only. Use{' '}
+            <strong>Export JSON</strong> to save a backup or <strong>Reset sample data</strong> to restore the defaults at any time.
+          </p>
+        </div>
       </main>
     </div>
   );
+}
+
+export function NoLoginWorkspace() {
+  return <NoLoginRolePicker />;
 }

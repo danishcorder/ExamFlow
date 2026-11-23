@@ -5,9 +5,10 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/app/page-header';
-import { ErrorState } from '@/components/app/states';
+import { ErrorState, DisabledInLocalModeCard } from '@/components/app/states';
 import { StatusPill } from '@/components/app/status-pill';
 import { useAuth } from '@/lib/auth';
+import { AUTH_MODE } from '@/lib/auth-mode';
 import { acceptInvitationFn } from '@/lib/workspace.functions';
 import { dbRoleToRoleKey, INSTITUTION_ROLE_LABELS, ROLES } from '@/lib/roles';
 
@@ -45,6 +46,18 @@ function OnboardingPage() {
     } finally {
       setAcceptingId(null);
     }
+  }
+
+  if (AUTH_MODE === 'none') {
+    return (
+      <>
+        <PageHeader
+          title="Workspace access"
+          description="Institutions and accounts are set up by ExamFlow administrators."
+        />
+        <DisabledInLocalModeCard feature="Workspace onboarding" />
+      </>
+    );
   }
 
   return (

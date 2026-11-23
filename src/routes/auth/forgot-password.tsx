@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthCard, FieldError } from "@/components/app/auth-layout";
 import { ErrorState, SuccessState } from "@/components/app/states";
-import { supabase } from "@/integrations/supabase/client";
+import { AUTH_MODE } from "@/lib/auth-mode";
 
 export const Route = createFileRoute("/auth/forgot-password")({
   head: () => ({ meta: [{ title: "Reset password — ExamFlow" }, { name: "description", content: "Recover access to your ExamFlow account." }, { property: "og:title", content: "Reset password — ExamFlow" }, { property: "og:description", content: "Recover access to your ExamFlow account." }] }),
@@ -20,12 +20,17 @@ function Forgot() {
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  if (AUTH_MODE === "none") {
+    return <Navigate to="/app" replace />;
+  }
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     const parsed = z.string().trim().email().safeParse(new FormData(e.currentTarget).get("email"));
     if (!parsed.success) { setFieldErr("Enter a valid email"); return; }
     setFieldErr(undefined); setBusy(true);
+    const { supabase } = await import("@/integrations/supabase/client");
     const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo: `${window.location.origin}/reset-password` });
     setBusy(false);
     if (error) { setError(error.message); return; }

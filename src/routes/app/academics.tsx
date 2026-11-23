@@ -31,24 +31,7 @@ import { RoleGuard } from '@/components/app/role-guard';
 import { EmptyState, ErrorState, LoadingState } from '@/components/app/states';
 import { StatusPill } from '@/components/app/status-pill';
 import { useAuth } from '@/lib/auth';
-import {
-  createAcademicClassFn,
-  createAcademicSessionFn,
-  createAcademicTermFn,
-  createClassSectionFn,
-  createCourseFn,
-  createDepartmentFn,
-  createProgramFn,
-  deleteAcademicClassFn,
-  deleteAcademicSessionFn,
-  deleteAcademicTermFn,
-  deleteClassSectionFn,
-  deleteCourseFn,
-  deleteDepartmentFn,
-  deleteProgramFn,
-  getAcademicCatalogFn,
-  setCurrentAcademicSessionFn,
-} from '@/lib/academic.functions';
+import { dataRepository } from '@/lib/data-repository';
 import type { AcademicCycleStatus } from '@/integrations/supabase/types';
 
 export const Route = createFileRoute('/app/academics')({
@@ -120,7 +103,7 @@ function AcademicsPage() {
     enabled: Boolean(user && activeInstitutionId),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return getAcademicCatalogFn({
+      return dataRepository.getAcademicCatalog({
         data: { institutionId: activeInstitutionId },
         headers: authHeaders(),
       });
@@ -201,7 +184,7 @@ function AcademicsPage() {
                       e.preventDefault();
                       if (!activeInstitutionId) return;
                       void runAction(async () => {
-                        await createAcademicSessionFn({
+                        await dataRepository.createAcademicSession({
                           data: {
                             institutionId: activeInstitutionId,
                             name: sessName,
@@ -309,7 +292,7 @@ function AcademicsPage() {
                       e.preventDefault();
                       if (!activeInstitutionId || !effectiveTermSessionId) return;
                       void runAction(async () => {
-                        await createAcademicTermFn({
+                        await dataRepository.createAcademicTerm({
                           data: {
                             institutionId: activeInstitutionId,
                             sessionId: effectiveTermSessionId,
@@ -452,7 +435,7 @@ function AcademicsPage() {
                               onClick={() =>
                                 void runAction(
                                   () =>
-                                    setCurrentAcademicSessionFn({
+                                    dataRepository.setCurrentAcademicSession({
                                       data: { institutionId: activeInstitutionId, sessionId: s.id },
                                       headers: authHeaders(),
                                     }),
@@ -473,7 +456,7 @@ function AcademicsPage() {
                               activeInstitutionId &&
                               void runAction(
                                 () =>
-                                  deleteAcademicSessionFn({
+                                  dataRepository.deleteAcademicSession({
                                     data: { institutionId: activeInstitutionId, sessionId: s.id },
                                     headers: authHeaders(),
                                   }),
@@ -523,7 +506,7 @@ function AcademicsPage() {
                               activeInstitutionId &&
                               void runAction(
                                 () =>
-                                  deleteAcademicTermFn({
+                                  dataRepository.deleteAcademicTerm({
                                     data: { institutionId: activeInstitutionId, termId: t.id },
                                     headers: authHeaders(),
                                   }),
@@ -557,7 +540,7 @@ function AcademicsPage() {
                     e.preventDefault();
                     if (!activeInstitutionId) return;
                     void runAction(async () => {
-                      await createDepartmentFn({
+                      await dataRepository.createDepartment({
                         data: {
                           institutionId: activeInstitutionId,
                           name: deptName,
@@ -663,7 +646,7 @@ function AcademicsPage() {
                             activeInstitutionId &&
                             void runAction(
                               () =>
-                                deleteDepartmentFn({
+                                dataRepository.deleteDepartment({
                                   data: { institutionId: activeInstitutionId, departmentId: d.id },
                                   headers: authHeaders(),
                                 }),
@@ -698,7 +681,7 @@ function AcademicsPage() {
                       e.preventDefault();
                       if (!activeInstitutionId) return;
                       void runAction(async () => {
-                        await createProgramFn({
+                        await dataRepository.createProgram({
                           data: {
                             institutionId: activeInstitutionId,
                             name: progName,
@@ -790,7 +773,7 @@ function AcademicsPage() {
                       e.preventDefault();
                       if (!activeInstitutionId) return;
                       void runAction(async () => {
-                        await createAcademicClassFn({
+                        await dataRepository.createAcademicClass({
                           data: {
                             institutionId: activeInstitutionId,
                             name: clsName,
@@ -879,7 +862,7 @@ function AcademicsPage() {
                       e.preventDefault();
                       if (!activeInstitutionId || !effectiveSecClassId) return;
                       void runAction(async () => {
-                        await createClassSectionFn({
+                        await dataRepository.createClassSection({
                           data: {
                             institutionId: activeInstitutionId,
                             classId: effectiveSecClassId,
@@ -969,7 +952,7 @@ function AcademicsPage() {
                           activeInstitutionId &&
                           void runAction(
                             () =>
-                              deleteProgramFn({
+                              dataRepository.deleteProgram({
                                 data: { institutionId: activeInstitutionId, programId: p.id },
                                 headers: authHeaders(),
                               }),
@@ -1014,7 +997,7 @@ function AcademicsPage() {
                             activeInstitutionId &&
                             void runAction(
                               () =>
-                                deleteAcademicClassFn({
+                                dataRepository.deleteAcademicClass({
                                   data: { institutionId: activeInstitutionId, classId: c.id },
                                   headers: authHeaders(),
                                 }),
@@ -1058,7 +1041,7 @@ function AcademicsPage() {
                             activeInstitutionId &&
                             void runAction(
                               () =>
-                                deleteClassSectionFn({
+                                dataRepository.deleteClassSection({
                                   data: { institutionId: activeInstitutionId, sectionId: sec.id },
                                   headers: authHeaders(),
                                 }),
@@ -1094,7 +1077,7 @@ function AcademicsPage() {
                     e.preventDefault();
                     if (!activeInstitutionId) return;
                     void runAction(async () => {
-                      await createCourseFn({
+                      await dataRepository.createCourse({
                         data: {
                           institutionId: activeInstitutionId,
                           code: courseCode,
@@ -1245,7 +1228,7 @@ function AcademicsPage() {
                             activeInstitutionId &&
                             void runAction(
                               () =>
-                                deleteCourseFn({
+                                dataRepository.deleteCourse({
                                   data: { institutionId: activeInstitutionId, courseId: c.id },
                                   headers: authHeaders(),
                                 }),

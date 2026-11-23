@@ -19,9 +19,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { useAuth } from '@/lib/auth';
+import { AUTH_MODE } from '@/lib/auth-mode';
+import { dataRepository } from '@/lib/data-repository';
 import type {
   StudentExamBucket,
   StudentExamDashboardData,
@@ -126,7 +127,6 @@ export function StudentExamDashboard({
   const [tab, setTab] = useState<FilterTab>('all');
   const [search, setSearch] = useState('');
   const [selectedReportExamId, setSelectedReportExamId] = useState<string | null>(null);
-  const client = supabaseClient ?? supabase;
 
   const query = useQuery({
     queryKey: ['student-exam-dashboard', activeInstitutionId, user?.id],
@@ -136,6 +136,13 @@ export function StudentExamDashboard({
       if (!activeInstitutionId || !user) {
         throw new Error('No active institution selected');
       }
+      if (AUTH_MODE === 'none') {
+        return dataRepository.getStudentExamDashboard({
+          data: { institutionId: activeInstitutionId },
+        });
+      }
+      const client =
+        supabaseClient ?? (await import('@/integrations/supabase/client')).supabase;
       return fetchStudentAssignedExamsFromSupabase(client, {
         institutionId: activeInstitutionId,
         userId: user.id,

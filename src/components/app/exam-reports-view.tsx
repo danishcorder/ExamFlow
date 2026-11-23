@@ -12,7 +12,7 @@ import { StatusPill } from '@/components/app/status-pill';
 import { TeacherGradingDashboard } from '@/components/app/teacher-grading-dashboard';
 import { useAuth } from '@/lib/auth';
 import { downloadCsv } from '@/lib/csv';
-import { getReportsOverviewFn } from '@/lib/reports.functions';
+import { dataRepository } from '@/lib/data-repository';
 import { REPORT_CSV_HEADERS, reportRowsToCsv, type ExamReportRow, type ReportsOverview } from '@/lib/reports.shared';
 
 const fmtPct = (n: number | null) => (n === null ? '—' : `${n}%`);
@@ -29,7 +29,7 @@ function useReports(from: string, to: string) {
       if (!activeInstitutionId) throw new Error('No active institution');
       const f = dayStart(from);
       const t = dayEnd(to);
-      return getReportsOverviewFn({
+      return dataRepository.getReportsOverview({
         data: { institutionId: activeInstitutionId, ...(f ? { from: f } : {}), ...(t ? { to: t } : {}) },
         headers: authHeaders(),
       });

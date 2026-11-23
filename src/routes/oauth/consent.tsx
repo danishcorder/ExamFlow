@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, Navigate } from '@tanstack/react-router';
 import { Check, ExternalLink, Loader2, ShieldAlert, ShieldCheck, X } from 'lucide-react';
 import { toast } from 'sonner';
 import type { OAuthAuthorizationDetails } from '@supabase/supabase-js';
@@ -8,8 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { AuthCard } from '@/components/app/auth-layout';
 import { ErrorState, LoadingState } from '@/components/app/states';
 import { StatusPill } from '@/components/app/status-pill';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
+import { AUTH_MODE } from '@/lib/auth-mode';
 import {
   formatOAuthServerError,
   OAUTH_SCOPE_LABELS,
@@ -44,12 +44,13 @@ function OAuthConsentPage() {
   const scopes = useMemo(() => parseOAuthScopes(details?.scope), [details?.scope]);
 
   useEffect(() => {
-    if (authLoading || !user || !authorizationId) return;
+    if (AUTH_MODE === 'none' || authLoading || !user || !authorizationId) return;
     let cancelled = false;
 
     async function load() {
       setLoadingDetails(true);
       setError(null);
+      const { supabase } = await import('@/integrations/supabase/client');
       const { data, error: reqErr } = await supabase.auth.oauth.getAuthorizationDetails(
         authorizationId!,
       );
@@ -84,11 +85,16 @@ function OAuthConsentPage() {
     };
   }, [authLoading, user, authorizationId]);
 
+  if (AUTH_MODE === 'none') {
+    return <Navigate to="/app" replace />;
+  }
+
   async function handleDecision(decision: 'approve' | 'deny') {
     if (!authorizationId) return;
     setDecisionBusy(decision);
     setError(null);
     try {
+      const { supabase } = await import('@/integrations/supabase/client');
       const res =
         decision === 'approve'
           ? await supabase.auth.oauth.approveAuthorization(authorizationId, {

@@ -41,16 +41,7 @@ import { RoleGuard } from '@/components/app/role-guard';
 import { EmptyState, ErrorState, LoadingState } from '@/components/app/states';
 import { StatusPill } from '@/components/app/status-pill';
 import { useAuth } from '@/lib/auth';
-import {
-  createStudentFn,
-  deleteStudentFn,
-  enrollStudentFn,
-  getAcademicCatalogFn,
-  importStudentsCsvFn,
-  listCsvImportJobsFn,
-  listStudentsFn,
-  updateEnrollmentStatusFn,
-} from '@/lib/academic.functions';
+import { dataRepository } from '@/lib/data-repository';
 import type { CsvImportSummary } from '@/lib/academic.server';
 import { parseAndValidateStudentCsv, SAMPLE_STUDENT_CSV } from '@/lib/csv';
 import type { EnrollmentStatus, StudentRecordStatus } from '@/integrations/supabase/types';
@@ -111,7 +102,7 @@ function StudentsPage() {
     enabled: Boolean(user && activeInstitutionId),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return getAcademicCatalogFn({
+      return dataRepository.getAcademicCatalog({
         data: { institutionId: activeInstitutionId },
         headers: authHeaders(),
       });
@@ -133,7 +124,7 @@ function StudentsPage() {
     enabled: Boolean(user && activeInstitutionId),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return listStudentsFn({
+      return dataRepository.listStudents({
         data: {
           institutionId: activeInstitutionId,
           ...(search.trim() ? { search: search.trim() } : {}),
@@ -154,7 +145,7 @@ function StudentsPage() {
     enabled: Boolean(user && activeInstitutionId && isAdmin),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return listCsvImportJobsFn({
+      return dataRepository.listCsvImportJobs({
         data: { institutionId: activeInstitutionId },
         headers: authHeaders(),
       });
@@ -180,7 +171,7 @@ function StudentsPage() {
     if (!activeInstitutionId) return;
     setBusy(true);
     try {
-      await createStudentFn({
+      await dataRepository.createStudent({
         data: {
           institutionId: activeInstitutionId,
           studentCode,
@@ -217,7 +208,7 @@ function StudentsPage() {
     }
     setBusy(true);
     try {
-      await enrollStudentFn({
+      await dataRepository.enrollStudent({
         data: {
           institutionId: activeInstitutionId,
           studentId: enrollTargetStudentId,
@@ -241,7 +232,7 @@ function StudentsPage() {
     setImporting(true);
     setImportResult(null);
     try {
-      const summary = await importStudentsCsvFn({
+      const summary = await dataRepository.importStudentsCsv({
         data: {
           institutionId: activeInstitutionId,
           fileName: csvFileName || 'students.csv',
@@ -485,7 +476,7 @@ function StudentsPage() {
                                           value={enr.status}
                                           onValueChange={(v) => {
                                             if (!activeInstitutionId) return;
-                                            void updateEnrollmentStatusFn({
+                                            void dataRepository.updateEnrollmentStatus({
                                               data: {
                                                 institutionId: activeInstitutionId,
                                                 enrollmentId: enr.id,
@@ -529,7 +520,7 @@ function StudentsPage() {
                                   aria-label="Delete student"
                                   onClick={() => {
                                     if (!activeInstitutionId) return;
-                                    void deleteStudentFn({
+                                    void dataRepository.deleteStudent({
                                       data: {
                                         institutionId: activeInstitutionId,
                                         studentId: st.id,

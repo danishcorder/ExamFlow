@@ -30,7 +30,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAuth } from '@/lib/auth';
-import { getTeacherExamDashboardFn } from '@/lib/exams.functions';
+import { dataRepository } from '@/lib/data-repository';
 import type {
   TeacherExamBucket,
   TeacherExamDashboardData,
@@ -98,7 +98,7 @@ export function TeacherExamDashboard({
     enabled: !dataOverride && Boolean(user && activeInstitutionId),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return getTeacherExamDashboardFn({
+      return dataRepository.getTeacherExamDashboard({
         data: { institutionId: activeInstitutionId },
         headers: authHeaders(),
       });

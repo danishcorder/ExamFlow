@@ -1,8 +1,12 @@
 import type { ReactNode } from "react";
-import { AlertCircle, CheckCircle2, Inbox, Loader2, FlaskConical } from "lucide-react";
+import { AlertCircle, CheckCircle2, Inbox, Loader2, FlaskConical, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
+import { ROLES } from "@/lib/roles";
+import { Link } from "@tanstack/react-router";
 
 export function EmptyState({ title, description, action, icon }: { title: string; description?: string | undefined; action?: ReactNode; icon?: ReactNode }) {
   return (
@@ -61,5 +65,34 @@ export function SampleBanner() {
       <FlaskConical className="h-4 w-4 shrink-0" />
       <span><strong>Visual preview.</strong> Figures and records on this page are sample content, not live data from your institution.</span>
     </div>
+  );
+}
+
+export function DisabledInLocalModeCard({
+  feature = "This area",
+  reason = "User accounts, invitations, billing, and platform administration require a Supabase deployment and are disabled in browser-only local mode.",
+}: {
+  feature?: string;
+  reason?: string;
+}) {
+  const { activeRoleKey } = useAuth();
+  const homePath = activeRoleKey ? ROLES[activeRoleKey].path : "/app";
+  return (
+    <Card className="shadow-none">
+      <CardContent className="flex flex-col items-center py-12 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <Lock className="h-6 w-6" />
+        </div>
+        <h2 className="mt-4 font-display text-xl font-semibold">
+          {feature} is unavailable in local mode
+        </h2>
+        <p className="mt-1.5 max-w-md text-sm text-muted-foreground">{reason}</p>
+        <div className="mt-5">
+          <Button asChild variant="outline">
+            <Link to={homePath}>Return to workspace</Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -32,19 +32,14 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/integrations/supabase/client';
 import type {
   CourseStatus,
   QuestionDifficulty,
   QuestionStatus,
   QuestionType,
 } from '@/integrations/supabase/types';
-import {
-  attachQuestionFileFn,
-  createQuestionFn,
-  deleteQuestionAttachmentFn,
-  updateQuestionFn,
-} from '@/lib/question-bank.functions';
+import { AUTH_MODE } from '@/lib/auth-mode';
+import { dataRepository } from '@/lib/data-repository';
 import {
   ALLOWED_ATTACHMENT_MIME_TYPES,
   MAX_ATTACHMENT_BYTES,
@@ -255,7 +250,7 @@ export function QuestionEditorDialog({
 
   async function handleDeleteExistingAttachment(attId: string) {
     try {
-      await deleteQuestionAttachmentFn({
+      await dataRepository.deleteQuestionAttachment({
         data: { institutionId, attachmentId: attId },
         headers: authHeaders(),
       });
@@ -274,25 +269,39 @@ export function QuestionEditorDialog({
         .toString(36)
         .slice(2, 8)}-${safeName}`;
 
-      const { error: uploadErr } = await supabase.storage
-        .from(QUESTION_ATTACHMENT_BUCKET)
-        .upload(storagePath, qf.file, {
-          contentType: qf.file.type,
-          upsert: false,
-        });
+      let localDataUrl: string | null = null;
+      if (AUTH_MODE === 'none') {
+        if (qf.file.type.startsWith('image/')) {
+          localDataUrl = await new Promise<string | null>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(qf.file);
+          });
+        }
+      } else {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { error: uploadErr } = await supabase.storage
+          .from(QUESTION_ATTACHMENT_BUCKET)
+          .upload(storagePath, qf.file, {
+            contentType: qf.file.type,
+            upsert: false,
+          });
 
-      if (uploadErr) {
-        throw new Error(`Storage upload failed for "${qf.file.name}": ${uploadErr.message}`);
+        if (uploadErr) {
+          throw new Error(`Storage upload failed for "${qf.file.name}": ${uploadErr.message}`);
+        }
       }
 
-      await attachQuestionFileFn({
+      await dataRepository.attachQuestionFile({
         data: {
           institutionId,
           questionId,
           fileName: qf.file.name,
-          storagePath,
+          storagePath: AUTH_MODE === 'none' ? `local/${storagePath}` : storagePath,
           mimeType: qf.file.type,
           fileSizeBytes: qf.file.size,
+          ...(localDataUrl ? { dataUrl: localDataUrl } : {}),
         },
         headers: authHeaders(),
       });
@@ -349,11 +358,11 @@ export function QuestionEditorDialog({
     setSaving(true);
     try {
       const saved = editingQuestion
-        ? await updateQuestionFn({
+        ? await dataRepository.updateQuestion({
             data: { ...payload, questionId: editingQuestion.id },
             headers: authHeaders(),
           })
-        : await createQuestionFn({
+        : await dataRepository.createQuestion({
             data: payload,
             headers: authHeaders(),
           });

@@ -3,9 +3,10 @@ import { Building, CheckCircle2, CreditCard, Shield, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatCard } from './stat-card';
-import { EmptyState, ErrorState, LoadingState } from './states';
+import { DisabledInLocalModeCard, EmptyState, ErrorState, LoadingState } from './states';
 import { StatusPill } from './status-pill';
 import { useAuth } from '@/lib/auth';
+import { AUTH_MODE } from '@/lib/auth-mode';
 import { getInstitutionSubscriptionFn } from '@/lib/saas.functions';
 import type { SubscriptionPlanTier } from '@/lib/saas.server';
 
@@ -18,8 +19,13 @@ export function SaasSubscriptionSettings({ institutionId }: SaasSubscriptionSett
 
   const subQuery = useQuery({
     queryKey: ['institution-subscription', institutionId],
+    enabled: AUTH_MODE === 'supabase',
     queryFn: async () => getInstitutionSubscriptionFn({ data: { institutionId }, headers: authHeaders() }),
   });
+
+  if (AUTH_MODE === 'none') {
+    return <DisabledInLocalModeCard feature="Subscriptions & billing" />;
+  }
 
   const sub = subQuery.data;
 

@@ -11,7 +11,7 @@ import { StatCard } from './stat-card';
 import { EmptyState, ErrorState, LoadingState } from './states';
 import { StatusPill } from './status-pill';
 import { useAuth } from '@/lib/auth';
-import { getInvigilatorDashboardFn, saveAttemptReviewFn } from '@/lib/proctoring.functions';
+import { dataRepository } from '@/lib/data-repository';
 import type { AttemptReviewStatus, InvigilatorDashboardAttemptRow } from '@/lib/proctoring.shared';
 
 type InvigilatorReviewDashboardProps = {
@@ -28,14 +28,14 @@ export function InvigilatorReviewDashboard({ institutionId, examId }: Invigilato
 
   const dashQuery = useQuery({
     queryKey: ['invigilator-dashboard', institutionId, examId],
-    queryFn: async () => getInvigilatorDashboardFn({ data: { institutionId, examId }, headers: authHeaders() }),
+    queryFn: async () => dataRepository.getInvigilatorDashboard({ data: { institutionId, examId }, headers: authHeaders() }),
   });
 
   async function handleSaveReview(status: AttemptReviewStatus) {
     if (!selectedRow) return;
     setIsSaving(true);
     try {
-      await saveAttemptReviewFn({
+      await dataRepository.saveAttemptReview({
         data: {
           institutionId,
           attemptId: selectedRow.attemptId,

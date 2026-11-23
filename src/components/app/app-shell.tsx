@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Brand } from './brand';
+import { NoLoginBanner, NoLoginLocalControls } from './no-login-workspace';
 import { ErrorState, LoadingState } from './states';
 import {
   dbRoleToRoleKey,
@@ -41,13 +42,18 @@ import {
   type RoleKey,
 } from '@/lib/roles';
 import { useAuth } from '@/lib/auth';
+import { AUTH_MODE } from '@/lib/auth-mode';
 import { cn } from '@/lib/utils';
 
 const SUPER_ADMIN_OPTION = '__platform_super_admin__';
+const HIDDEN_LOCAL_PATHS = new Set(['/app/members', '/app/accounts', '/app/invitations', '/app/settings', '/app/super-admin', '/app/onboarding']);
 
 function useEffectiveRole(): RoleKey | null {
   const { pathname } = useLocation();
-  const { workspace, activeMembership } = useAuth();
+  const { workspace, activeMembership, localRole } = useAuth();
+  if (AUTH_MODE === 'none') {
+    return localRole;
+  }
   if (pathname.startsWith('/app/super-admin') && workspace?.isSuperAdmin) {
     return 'super-admin';
   }
@@ -120,13 +126,19 @@ function SidebarBody({
   institutionName: string | null;
   onNavigate?: (() => void) | undefined;
 }) {
-  const navItems = role ? ROLES[role].nav : [];
+  const isLocal = AUTH_MODE === 'none';
+  const rawNavItems = role ? ROLES[role].nav : [];
+  const navItems = isLocal
+    ? rawNavItems.filter((item) => !item.to || !HIDDEN_LOCAL_PATHS.has(item.to))
+    : rawNavItems;
   const headerLabel =
     role === 'super-admin'
       ? ROLES['super-admin'].label
       : institutionName
         ? `${institutionName} · ${role ? ROLES[role].short : ''}`
-        : 'Onboarding';
+        : isLocal
+          ? 'Local mode'
+          : 'Onboarding';
 
   return (
     <div className="workspace-sidebar flex h-full flex-col bg-sidebar">
@@ -140,25 +152,27 @@ function SidebarBody({
         {navItems.map((i) => (
           <NavLink key={i.label} item={i} onNavigate={onNavigate} />
         ))}
-        {navItems.length === 0 && (
+        {navItems.length === 0 && !isLocal && (
           <NavLink
             item={{ label: 'Set up institution', icon: PlusCircle, to: '/app/onboarding' }}
             onNavigate={onNavigate}
           />
         )}
       </nav>
-      <div className="shrink-0 space-y-1 border-t border-sidebar-border px-3 py-3">
-        {WORKSPACE_UTILITY_NAV.map((item) => (
-          <NavLink
-            key={item.label}
-            item={item}
-            badge={item.to === '/app/invitations' ? pendingInviteCount : undefined}
-            onNavigate={onNavigate}
-          />
-        ))}
-      </div>
+      {!isLocal && (
+        <div className="shrink-0 space-y-1 border-t border-sidebar-border px-3 py-3">
+          {WORKSPACE_UTILITY_NAV.map((item) => (
+            <NavLink
+              key={item.label}
+              item={item}
+              badge={item.to === '/app/invitations' ? pendingInviteCount : undefined}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
+      )}
       <div className="flex shrink-0 items-center gap-2 border-t border-sidebar-border px-5 py-3 text-[10px] font-semibold uppercase tracking-[.12em] text-sidebar-foreground/50">
-        <ShieldCheck className="h-3.5 w-3.5 text-gold" /> Secure workspace
+        <ShieldCheck className="h-3.5 w-3.5 text-gold" /> {isLocal ? 'Local browser workspace' : 'Secure workspace'}
       </div>
     </div>
   );
@@ -248,7 +262,7 @@ function ProfileMenu() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const role = useEffectiveRole();
-  const { pathname, search } = useLocation();
+  const { pathname } = useLocation();
   const navigate = useNavigate();
   const {
     user,
@@ -262,6 +276,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     refreshWorkspace,
   } = useAuth();
   const [open, setOpen] = useState(false);
+  const isLocal = AUTH_MODE === 'none';
 
   const pendingInviteCount = workspace?.pendingInvitations.length ?? 0;
   const memberships = workspace?.memberships ?? [];
@@ -271,7 +286,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     : undefined;
   const pageLabel = pathname.startsWith('/app/exam-session')
     ? 'Examination session'
-    : activeNavItem?.label ?? (isSuperAdmin ? 'Platform overview' : 'Institution setup');
+    : activeNavItem?.label ?? (isSuperAdmin ? 'Platform overview' : isLocal ? 'Local workspace' : 'Institution setup');
 
   const switcherValue =
     pathname.startsWith('/app/super-admin') && isSuperAdmin
@@ -297,120 +312,143 @@ export function AppShell({ children }: { children: ReactNode }) {
   const redirectTarget = `${pathname}${currentSearch}`;
 
   return (
-    <div className="workspace-canvas min-h-screen">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 lg:block xl:w-[272px]">
-        <SidebarBody
-          role={role}
-          pendingInviteCount={pendingInviteCount}
-          institutionName={activeMembership?.institution.name ?? null}
-        />
-      </aside>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="workspace-sidebar w-64 border-0 p-0">
-          <SheetTitle className="sr-only">Navigation</SheetTitle>
+    <div className="workspace-canvas flex min-h-screen flex-col">
+      {isLocal && (
+        <div className="sticky top-0 z-40">
+          <NoLoginBanner />
+        </div>
+      )}
+      <div className="relative flex min-h-0 flex-1">
+        <aside
+          className={cn(
+            'fixed bottom-0 left-0 z-30 hidden w-64 lg:block xl:w-[272px]',
+            isLocal ? 'top-[33px] sm:top-[37px]' : 'top-0',
+          )}
+        >
           <SidebarBody
             role={role}
             pendingInviteCount={pendingInviteCount}
             institutionName={activeMembership?.institution.name ?? null}
-            onNavigate={() => setOpen(false)}
           />
-        </SheetContent>
-      </Sheet>
-      <div className="lg:pl-64 xl:pl-[272px]">
-        <header className="workspace-topbar sticky top-0 z-20 flex h-16 items-center gap-3 bg-background/95 px-4 backdrop-blur sm:px-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setOpen(true)}
-            aria-label="Open navigation"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          <div className="hidden min-w-0 flex-1 items-center gap-3 md:flex">
-            <span className="text-xs font-semibold text-muted-foreground">Workspace</span>
-            <span className="h-4 w-px bg-border" />
-            <span className="truncate text-sm font-semibold text-navy">{pageLabel}</span>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            {user && (memberships.length > 0 || isSuperAdmin) && (
-              <Select value={switcherValue} onValueChange={handleWorkspaceSwitch}>
-                <SelectTrigger className="h-9 w-[230px]" aria-label="Switch institution workspace">
-                  <SelectValue placeholder="Select institution" />
-                </SelectTrigger>
-                <SelectContent>
-                  {isSuperAdmin && (
-                    <SelectItem value={SUPER_ADMIN_OPTION}>
-                      <span className="inline-flex items-center gap-1.5">
-                        <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                        Platform Super Admin
-                      </span>
-                    </SelectItem>
-                  )}
-                  {memberships.map((m) => (
-                    <SelectItem key={m.institution_id} value={m.institution_id}>
-                      {m.institution.name} ({ROLES[dbRoleToRoleKey(m.role)].short})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        </aside>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent side="left" className="workspace-sidebar w-64 border-0 p-0">
+            <SheetTitle className="sr-only">Navigation</SheetTitle>
+            <SidebarBody
+              role={role}
+              pendingInviteCount={pendingInviteCount}
+              institutionName={activeMembership?.institution.name ?? null}
+              onNavigate={() => setOpen(false)}
+            />
+          </SheetContent>
+        </Sheet>
+        <div className="min-w-0 flex-1 lg:pl-64 xl:pl-[272px]">
+          <header
+            className={cn(
+              'workspace-topbar sticky z-20 flex min-h-16 flex-wrap items-center gap-3 bg-background/95 px-4 py-2 backdrop-blur sm:px-6',
+              isLocal ? 'top-[33px] sm:top-[37px]' : 'top-0',
             )}
+          >
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-xl border border-transparent hover:border-gold/35 hover:bg-gold/10"
-              aria-label="Invitations and notifications"
-              onClick={() => {
-                if (pendingInviteCount > 0) {
-                  void navigate({ to: '/app/invitations' });
-                } else {
-                  toast('No pending invitations', {
-                    description: 'System notifications arrive in a later phase.',
-                  });
-                }
-              }}
+              className="lg:hidden"
+              onClick={() => setOpen(true)}
+              aria-label="Open navigation"
             >
-              <Bell className="h-5 w-5" />
+              <Menu className="h-5 w-5" />
             </Button>
-            <ProfileMenu />
-          </div>
-        </header>
-        <main className="mx-auto max-w-[1500px] space-y-7 p-4 sm:p-6 lg:p-8 xl:p-10">
-          {loading ? (
-            <LoadingState label="Checking session…" />
-          ) : !user ? (
-            <Card className="shadow-none">
-              <CardContent className="flex flex-col items-center py-12 text-center">
-                <h2 className="font-display text-xl font-semibold">Sign in to continue</h2>
-                <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                  Your session has ended or you are not signed in. Sign in to access your institution workspace.
-                </p>
-                <div className="mt-5 flex gap-2">
-                  <Button asChild>
-                    <Link to="/auth/login" search={{ redirect: redirectTarget }}>
-                      Sign in
-                    </Link>
+            <div className="hidden min-w-0 flex-1 items-center gap-3 md:flex">
+              <span className="text-xs font-semibold text-muted-foreground">Workspace</span>
+              <span className="h-4 w-px bg-border" />
+              <span className="truncate text-sm font-semibold text-navy">{pageLabel}</span>
+            </div>
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              {isLocal ? (
+                <NoLoginLocalControls />
+              ) : (
+                <>
+                  {user && (memberships.length > 0 || isSuperAdmin) && (
+                    <Select value={switcherValue} onValueChange={handleWorkspaceSwitch}>
+                      <SelectTrigger className="h-9 w-[230px]" aria-label="Switch institution workspace">
+                        <SelectValue placeholder="Select institution" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {isSuperAdmin && (
+                          <SelectItem value={SUPER_ADMIN_OPTION}>
+                            <span className="inline-flex items-center gap-1.5">
+                              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                              Platform Super Admin
+                            </span>
+                          </SelectItem>
+                        )}
+                        {memberships.map((m) => (
+                          <SelectItem key={m.institution_id} value={m.institution_id}>
+                            {m.institution.name} ({ROLES[dbRoleToRoleKey(m.role)].short})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-xl border border-transparent hover:border-gold/35 hover:bg-gold/10"
+                    aria-label="Invitations and notifications"
+                    onClick={() => {
+                      if (pendingInviteCount > 0) {
+                        void navigate({ to: '/app/invitations' });
+                      } else {
+                        toast('No pending invitations', {
+                          description: 'System notifications arrive in a later phase.',
+                        });
+                      }
+                    }}
+                  >
+                    <Bell className="h-5 w-5" />
                   </Button>
-                  <Button asChild variant="outline">
-                    <Link to="/auth/register" search={{ redirect: redirectTarget }}>
-                      Create account
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : workspaceError && !workspace && !workspaceLoading ? (
-            <ErrorState
-              title="Database connection unavailable"
-              description={workspaceError}
-              onRetry={() => {
-                void refreshWorkspace();
-              }}
-            />
-          ) : (
-            children
-          )}
-        </main>
+                  <ProfileMenu />
+                </>
+              )}
+            </div>
+          </header>
+          <main className="mx-auto max-w-[1500px] space-y-7 p-4 sm:p-6 lg:p-8 xl:p-10">
+            {loading ? (
+              <LoadingState label="Checking session…" />
+            ) : !user && !isLocal ? (
+              <Card className="shadow-none">
+                <CardContent className="flex flex-col items-center py-12 text-center">
+                  <h2 className="font-display text-xl font-semibold">Sign in to continue</h2>
+                  <p className="mt-1 max-w-md text-sm text-muted-foreground">
+                    Your session has ended or you are not signed in. Sign in to access your institution workspace.
+                  </p>
+                  <div className="mt-5 flex gap-2">
+                    <Button asChild>
+                      <Link to="/auth/login" search={{ redirect: redirectTarget }}>
+                        Sign in
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline">
+                      <Link to="/auth/register" search={{ redirect: redirectTarget }}>
+                        Create account
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : workspaceError && !workspace && !workspaceLoading ? (
+              <ErrorState
+                title="Database connection unavailable"
+                description={workspaceError}
+                onRetry={() => {
+                  void refreshWorkspace();
+                }}
+              />
+            ) : (
+              children
+            )}
+          </main>
+        </div>
       </div>
     </div>
   );

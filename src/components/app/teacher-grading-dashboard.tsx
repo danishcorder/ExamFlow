@@ -27,14 +27,7 @@ import { StatCard } from './stat-card';
 import { EmptyState, ErrorState, LoadingState } from './states';
 import { StatusPill } from './status-pill';
 import { useAuth } from '@/lib/auth';
-import {
-  calculateGradesFn,
-  getExamAnalyticsFn,
-  getTeacherAttemptGradingDetailFn,
-  getTeacherExamGradingDashboardFn,
-  publishExamResultsFn,
-  saveManualQuestionGradeFn,
-} from '@/lib/grading.functions';
+import { dataRepository } from '@/lib/data-repository';
 import type { TeacherAttemptGradingDetail, TeacherAttemptQuestionDetail } from '@/lib/grading.shared';
 import { downloadCsv } from '@/lib/csv';
 
@@ -67,7 +60,7 @@ export function TeacherGradingDashboard({ institutionId, examId, onBack }: Teach
   const dashboardQuery = useQuery({
     queryKey: ['teacher-grading-dashboard', institutionId, examId],
     queryFn: async () =>
-      getTeacherExamGradingDashboardFn({
+      dataRepository.getTeacherExamGradingDashboard({
         data: { institutionId, examId },
         headers: authHeaders(),
       }),
@@ -78,7 +71,7 @@ export function TeacherGradingDashboard({ institutionId, examId, onBack }: Teach
     queryKey: ['exam-analytics', institutionId, examId],
     enabled: activeTab === 'analytics',
     queryFn: async () =>
-      getExamAnalyticsFn({
+      dataRepository.getExamAnalytics({
         data: { institutionId, examId },
         headers: authHeaders(),
       }),
@@ -90,7 +83,7 @@ export function TeacherGradingDashboard({ institutionId, examId, onBack }: Teach
     enabled: Boolean(selectedAttemptId),
     queryFn: async () => {
       if (!selectedAttemptId) return null;
-      return getTeacherAttemptGradingDetailFn({
+      return dataRepository.getTeacherAttemptGradingDetail({
         data: { institutionId, attemptId: selectedAttemptId },
         headers: authHeaders(),
       });
@@ -143,7 +136,7 @@ export function TeacherGradingDashboard({ institutionId, examId, onBack }: Teach
   async function handlePublishAll() {
     setIsPublishingAll(true);
     try {
-      const count = await publishExamResultsFn({
+      const count = await dataRepository.publishExamResults({
         data: { institutionId, examId },
         headers: authHeaders(),
       });
@@ -158,7 +151,7 @@ export function TeacherGradingDashboard({ institutionId, examId, onBack }: Teach
 
   async function handlePublishSingleAttempt(attemptId: string) {
     try {
-      await publishExamResultsFn({
+      await dataRepository.publishExamResults({
         data: { institutionId, examId, attemptIds: [attemptId] },
         headers: authHeaders(),
       });
@@ -175,7 +168,7 @@ export function TeacherGradingDashboard({ institutionId, examId, onBack }: Teach
   async function handleRecalculateAttempt(attemptId: string) {
     setIsRecalculating(true);
     try {
-      await calculateGradesFn({
+      await dataRepository.calculateGrades({
         data: { institutionId, attemptId },
         headers: authHeaders(),
       });
@@ -210,7 +203,7 @@ export function TeacherGradingDashboard({ institutionId, examId, onBack }: Teach
 
     setSavingQuestionId(question.questionId);
     try {
-      await saveManualQuestionGradeFn({
+      await dataRepository.saveManualQuestionGrade({
         data: {
           institutionId,
           attemptId: selectedAttemptId,

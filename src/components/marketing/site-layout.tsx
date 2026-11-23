@@ -60,9 +60,9 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
       <footer className="portal-footer">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div><Brand inverted /><p className="mt-4 max-w-xs text-sm leading-6 text-white/55">A secure examination workspace for schools, colleges and universities.</p></div>
-          <div><p class="footer-heading">Product</p><Link to="/features">Features</Link><Link to="/roles">Who it’s for</Link><Link to="/pricing">Plans</Link></div>
-          <div><p class="footer-heading">Try it</p><Link to="/demo-exam">Sample ICT exam</Link><Link to="/demo">Demo workspace</Link><Link to="/security">Trust & security</Link></div>
-          <div><p class="footer-heading">Account</p><span className="text-white/55">Admin access is hidden</span></div>
+          <div><p className="footer-heading">Product</p><Link to="/features">Features</Link><Link to="/roles">Who it’s for</Link><Link to="/pricing">Plans</Link></div>
+          <div><p className="footer-heading">Try it</p><Link to="/demo-exam">Sample ICT exam</Link><Link to="/demo">Demo workspace</Link><Link to="/security">Trust & security</Link></div>
+          <div><p className="footer-heading">Account</p><span className="text-white/55">Admin access is hidden</span></div>
           <div className="border-t border-white/10 pt-5 text-xs text-white/45 md:col-span-4 md:flex md:items-center md:justify-between md:pt-6">
             <span>© {new Date().getFullYear()} ExamFlow. All rights reserved.</span><span>Designed for secure assessment.</span>
           </div>

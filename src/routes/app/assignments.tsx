@@ -27,11 +27,7 @@ import { RoleGuard } from '@/components/app/role-guard';
 import { EmptyState, ErrorState, LoadingState } from '@/components/app/states';
 import { StatusPill } from '@/components/app/status-pill';
 import { useAuth } from '@/lib/auth';
-import {
-  createTeacherAssignmentFn,
-  deleteTeacherAssignmentFn,
-  getAcademicCatalogFn,
-} from '@/lib/academic.functions';
+import { dataRepository } from '@/lib/data-repository';
 
 export const Route = createFileRoute('/app/assignments')({
   head: () => ({
@@ -65,7 +61,7 @@ function AssignmentsPage() {
     enabled: Boolean(user && activeInstitutionId),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return getAcademicCatalogFn({
+      return dataRepository.getAcademicCatalog({
         data: { institutionId: activeInstitutionId },
         headers: authHeaders(),
       });
@@ -88,7 +84,7 @@ function AssignmentsPage() {
     if (!activeInstitutionId || !effMembershipId || !effCourseId || !effSessionId) return;
     setBusy(true);
     try {
-      await createTeacherAssignmentFn({
+      await dataRepository.createTeacherAssignment({
         data: {
           institutionId: activeInstitutionId,
           membershipId: effMembershipId,
@@ -112,7 +108,7 @@ function AssignmentsPage() {
     if (!activeInstitutionId) return;
     setBusy(true);
     try {
-      await deleteTeacherAssignmentFn({
+      await dataRepository.deleteTeacherAssignment({
         data: { institutionId: activeInstitutionId, assignmentId },
         headers: authHeaders(),
       });

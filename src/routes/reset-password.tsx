@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthCard, FieldError } from "@/components/app/auth-layout";
 import { ErrorState } from "@/components/app/states";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { AUTH_MODE } from "@/lib/auth-mode";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({ meta: [{ title: "Set a new password — ExamFlow" }, { name: "description", content: "Choose a new password for your ExamFlow account." }, { property: "og:title", content: "Set a new password — ExamFlow" }, { property: "og:description", content: "Choose a new password for your ExamFlow account." }] }),
@@ -22,7 +22,15 @@ function Reset() {
   const [fieldErr, setFieldErr] = useState<string>();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  useEffect(() => { setIsRecovery(window.location.hash.includes("type=recovery")); }, []);
+  useEffect(() => {
+    if (AUTH_MODE !== "none") {
+      setIsRecovery(window.location.hash.includes("type=recovery"));
+    }
+  }, []);
+
+  if (AUTH_MODE === "none") {
+    return <Navigate to="/app" replace />;
+  }
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -31,6 +39,7 @@ function Reset() {
     if (pw.length < 8) return setFieldErr("Use at least 8 characters");
     if (pw !== confirm) return setFieldErr("Passwords don't match");
     setFieldErr(undefined); setBusy(true);
+    const { supabase } = await import("@/integrations/supabase/client");
     const { error } = await supabase.auth.updateUser({ password: pw });
     setBusy(false);
     if (error) return setError(error.message);

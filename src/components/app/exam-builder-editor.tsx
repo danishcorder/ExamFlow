@@ -40,21 +40,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import type { ExamSectionType } from '@/integrations/supabase/types';
-import {
-  addExamSectionFn,
-  addQuestionsToExamSectionFn,
-  cloneExamFn,
-  closeExamFn,
-  createDraftRevisionFn,
-  deleteExamDraftFn,
-  deleteExamSectionFn,
-  importQuestionSetToExamSectionFn,
-  publishExamFn,
-  removeExamQuestionFn,
-  setExamAssignmentsFn,
-  updateExamDraftFn,
-  updateExamQuestionConfigFn,
-} from '@/lib/exams.functions';
+import { dataRepository } from '@/lib/data-repository';
 import type { ExamBuilderCatalog, ExamDetail } from '@/lib/exams.server';
 import { ExamBuilderForm } from './exam-builder-form';
 import { ExamQuestionPickerDialog } from './exam-question-picker-dialog';
@@ -232,7 +218,7 @@ export function ExamBuilderEditor({
   async function handleSaveSettings() {
     setBusyAction('save');
     try {
-      const updated = await updateExamDraftFn({
+      const updated = await dataRepository.updateExamDraft({
         data: {
           institutionId,
           examId: exam.id,
@@ -270,7 +256,7 @@ export function ExamBuilderEditor({
     }
     setBusyAction('add-section');
     try {
-      const updated = await addExamSectionFn({
+      const updated = await dataRepository.addExamSection({
         data: {
           institutionId,
           examId: exam.id,
@@ -293,7 +279,7 @@ export function ExamBuilderEditor({
   async function handleDeleteSection(sectionId: string) {
     setBusyAction(`del-sec-${sectionId}`);
     try {
-      const updated = await deleteExamSectionFn({
+      const updated = await dataRepository.deleteExamSection({
         data: { institutionId, examId: exam.id, sectionId },
         headers: authHeaders(),
       });
@@ -311,7 +297,7 @@ export function ExamBuilderEditor({
     if (!buf) return;
     setBusyAction(`q-${sqId}`);
     try {
-      const updated = await updateExamQuestionConfigFn({
+      const updated = await dataRepository.updateExamQuestionConfig({
         data: {
           institutionId,
           examId: exam.id,
@@ -333,7 +319,7 @@ export function ExamBuilderEditor({
   async function handleRemoveQuestion(sqId: string) {
     setBusyAction(`rm-${sqId}`);
     try {
-      const updated = await removeExamQuestionFn({
+      const updated = await dataRepository.removeExamQuestion({
         data: { institutionId, examId: exam.id, sectionQuestionId: sqId },
         headers: authHeaders(),
       });
@@ -349,7 +335,7 @@ export function ExamBuilderEditor({
   async function handleSaveAssignments() {
     setBusyAction('assign');
     try {
-      const updated = await setExamAssignmentsFn({
+      const updated = await dataRepository.setExamAssignments({
         data: {
           institutionId,
           examId: exam.id,
@@ -371,7 +357,7 @@ export function ExamBuilderEditor({
   async function handlePublish() {
     setBusyAction('publish');
     try {
-      const updated = await publishExamFn({
+      const updated = await dataRepository.publishExam({
         data: { institutionId, examId: exam.id },
         headers: authHeaders(),
       });
@@ -387,7 +373,7 @@ export function ExamBuilderEditor({
   async function handleUnlockRevision() {
     setBusyAction('revision');
     try {
-      const updated = await createDraftRevisionFn({
+      const updated = await dataRepository.createDraftRevision({
         data: { institutionId, examId: exam.id },
         headers: authHeaders(),
       });
@@ -403,7 +389,7 @@ export function ExamBuilderEditor({
   async function handleCloseExam() {
     setBusyAction('close');
     try {
-      const updated = await closeExamFn({
+      const updated = await dataRepository.closeExam({
         data: { institutionId, examId: exam.id },
         headers: authHeaders(),
       });
@@ -419,7 +405,7 @@ export function ExamBuilderEditor({
   async function handleCloneExam() {
     setBusyAction('clone');
     try {
-      const cloned = await cloneExamFn({
+      const cloned = await dataRepository.cloneExam({
         data: { institutionId, examId: exam.id },
         headers: authHeaders(),
       });
@@ -435,7 +421,7 @@ export function ExamBuilderEditor({
   async function handleDeleteDraft() {
     setBusyAction('delete');
     try {
-      await deleteExamDraftFn({
+      await dataRepository.deleteExamDraft({
         data: { institutionId, examId: exam.id },
         headers: authHeaders(),
       });
@@ -1363,7 +1349,7 @@ export function ExamBuilderEditor({
           questionSets={catalog.questionSets}
           defaultCourseId={exam.course_id}
           onAddQuestions={async (questionIds) => {
-            const updated = await addQuestionsToExamSectionFn({
+            const updated = await dataRepository.addQuestionsToExamSection({
               data: {
                 institutionId,
                 examId: exam.id,
@@ -1376,7 +1362,7 @@ export function ExamBuilderEditor({
             toast.success(`Added ${questionIds.length} question(s) to section`);
           }}
           onImportQuestionSet={async (questionSetId) => {
-            const res = await importQuestionSetToExamSectionFn({
+            const res = await dataRepository.importQuestionSetToExamSection({
               data: {
                 institutionId,
                 examId: exam.id,

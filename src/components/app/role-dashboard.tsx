@@ -20,8 +20,8 @@ import { StatusPill } from './status-pill';
 import { RoleGuard } from './role-guard';
 import { ProgressRing } from './progress-ring';
 import { useAuth } from '@/lib/auth';
-import { getInstitutionWorkspaceFn } from '@/lib/workspace.functions';
-import { getReportsOverviewFn } from '@/lib/reports.functions';
+import { AUTH_MODE } from '@/lib/auth-mode';
+import { dataRepository } from '@/lib/data-repository';
 import { INSTITUTION_ROLE_LABELS, type RoleKey } from '@/lib/roles';
 
 const QUICK_ACTIONS = [
@@ -47,7 +47,7 @@ export function RoleDashboard({ role }: { role: Exclude<RoleKey, 'super-admin'> 
     enabled,
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return getInstitutionWorkspaceFn({ data: { institutionId: activeInstitutionId }, headers: authHeaders() });
+      return dataRepository.getInstitutionWorkspace({ data: { institutionId: activeInstitutionId }, headers: authHeaders() });
     },
   });
 
@@ -56,7 +56,7 @@ export function RoleDashboard({ role }: { role: Exclude<RoleKey, 'super-admin'> 
     enabled,
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return getReportsOverviewFn({ data: { institutionId: activeInstitutionId }, headers: authHeaders() });
+      return dataRepository.getReportsOverview({ data: { institutionId: activeInstitutionId }, headers: authHeaders() });
     },
   });
 
@@ -71,7 +71,7 @@ export function RoleDashboard({ role }: { role: Exclude<RoleKey, 'super-admin'> 
   const gradedPct = reports && reports.totals.submissions > 0
     ? Math.round((reports.totals.graded / reports.totals.submissions) * 100) : null;
   const attention: Attention[] = [];
-  if (pendingInvites > 0) {
+  if (AUTH_MODE === 'supabase' && pendingInvites > 0) {
     attention.push({
       key: 'invites',
       text: `${pendingInvites} invitation${pendingInvites === 1 ? '' : 's'} not yet accepted`,
@@ -159,7 +159,7 @@ export function RoleDashboard({ role }: { role: Exclude<RoleKey, 'super-admin'> 
           <section aria-label="Quick actions">
             <h2 className="mb-3 text-sm font-semibold">Quick actions</h2>
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {QUICK_ACTIONS.map((a) => (
+              {QUICK_ACTIONS.filter((a) => AUTH_MODE === 'supabase' || a.to !== '/app/members').map((a) => (
                 <li key={a.to}>
                   <Link to={a.to} className="flex h-full items-center gap-3 rounded-xl border bg-card p-4 text-sm font-medium transition-colors hover:border-primary/40 hover:bg-muted/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">
                     <a.icon className="h-5 w-5 shrink-0 text-gold-dark" aria-hidden />
@@ -216,7 +216,9 @@ export function RoleDashboard({ role }: { role: Exclude<RoleKey, 'super-admin'> 
                 ))}
                 {(data?.members.length ?? 0) === 0 && <p className="text-sm text-muted-foreground">No members yet. Invite your first teacher.</p>}
                 <div className="flex gap-2">
-                  <Button asChild variant="ghost" size="sm" className="px-0"><Link to="/app/members">Manage members <ArrowRight className="h-3.5 w-3.5" /></Link></Button>
+                  {AUTH_MODE === 'supabase' && (
+                    <Button asChild variant="ghost" size="sm" className="px-0"><Link to="/app/members">Manage members <ArrowRight className="h-3.5 w-3.5" /></Link></Button>
+                  )}
                   <Button asChild variant="ghost" size="sm"><Link to="/app/audit-log">Audit log</Link></Button>
                 </div>
               </CardContent>

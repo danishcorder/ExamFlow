@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react';
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { useEffect, useState, type FormEvent } from 'react';
+import { createFileRoute, Link, Navigate, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthCard, FieldError } from '@/components/app/auth-layout';
 import { ErrorState } from '@/components/app/states';
-import { isSupabaseConfigured, supabase } from '@/integrations/supabase/client';
+import { AUTH_MODE } from '@/lib/auth-mode';
 import { signInWithUsernameFn } from '@/lib/provisioning.functions';
 
 export const Route = createFileRoute('/auth/login')({
@@ -37,11 +37,29 @@ function Login() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [supabaseReady, setSupabaseReady] = useState(true);
+
+  useEffect(() => {
+    if (AUTH_MODE === 'none') return;
+    let cancelled = false;
+    void import('@/integrations/supabase/client').then(({ isSupabaseConfigured }) => {
+      if (!cancelled) setSupabaseReady(isSupabaseConfigured);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (AUTH_MODE === 'none') {
+    return <Navigate to="/app" replace />;
+  }
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    const { isSupabaseConfigured, supabase } = await import('@/integrations/supabase/client');
     if (!isSupabaseConfigured) {
+      setSupabaseReady(false);
       setError('Sign-in is unavailable until the deployment administrator connects a Supabase project.');
       return;
     }
@@ -83,7 +101,7 @@ function Login() {
       }
     >
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
-        {!isSupabaseConfigured && (
+        {!supabaseReady && (
           <ErrorState
             title="Sign-in unavailable"
             description="This deployment is missing its public Supabase settings. Ask the deployment administrator to finish setup."
@@ -119,7 +137,7 @@ function Login() {
           />
           <FieldError msg={errors['password']} />
         </div>
-        <Button type="submit" className="w-full" disabled={busy || !isSupabaseConfigured}>
+        <Button type="submit" className="w-full" disabled={busy || !supabaseReady}>
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
           Sign in
         </Button>

@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
-import { Link } from '@tanstack/react-router';
-import { ShieldAlert, Building2 } from 'lucide-react';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { ShieldAlert, Building2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ErrorState, LoadingState } from './states';
 import { useAuth } from '@/lib/auth';
+import { AUTH_MODE } from '@/lib/auth-mode';
 import { dbRoleToRoleKey, ROLES, type RoleKey } from '@/lib/roles';
 
 export function RoleGuard({
@@ -16,6 +17,7 @@ export function RoleGuard({
   allowedRoles?: RoleKey[];
   children: ReactNode;
 }) {
+  const navigate = useNavigate();
   const {
     user,
     loading,
@@ -23,6 +25,8 @@ export function RoleGuard({
     workspaceLoading,
     workspaceError,
     activeMembership,
+    activeRoleKey: authRoleKey,
+    setLocalRole,
     refreshWorkspace,
   } = useAuth();
 
@@ -30,7 +34,7 @@ export function RoleGuard({
     return <LoadingState label="Verifying workspace permissions…" />;
   }
 
-  if (!user) {
+  if (AUTH_MODE !== 'none' && !user) {
     return (
       <Card className="shadow-none">
         <CardContent className="flex flex-col items-center py-12 text-center">
@@ -60,7 +64,12 @@ export function RoleGuard({
   }
 
   const isSuperAdmin = workspace?.isSuperAdmin ?? false;
-  const activeRoleKey = activeMembership ? dbRoleToRoleKey(activeMembership.role) : null;
+  const activeRoleKey =
+    AUTH_MODE === 'none'
+      ? authRoleKey
+      : activeMembership
+        ? dbRoleToRoleKey(activeMembership.role)
+        : null;
   const permitted = allowedRoles ?? (requiredRole ? [requiredRole] : []);
   const isAuthorized =
     permitted.length === 0 ||
@@ -72,7 +81,9 @@ export function RoleGuard({
       ? ROLES[activeRoleKey].path
       : isSuperAdmin
         ? ROLES['super-admin'].path
-        : '/app/onboarding';
+        : AUTH_MODE === 'none'
+          ? '/app'
+          : '/app/onboarding';
     const labelText = permitted.map((role) => ROLES[role].label).join(' or ');
 
     return (
@@ -93,9 +104,21 @@ export function RoleGuard({
             <Button asChild>
               <Link to={fallbackTo}>
                 <Building2 className="h-4 w-4" />
-                {activeMembership ? 'Go to my workspace' : 'Request institution access'}
+                {activeMembership ? 'Go to my workspace' : AUTH_MODE === 'none' ? 'Choose role' : 'Request institution access'}
               </Link>
             </Button>
+            {AUTH_MODE === 'none' && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setLocalRole(null);
+                  void navigate({ to: '/app' });
+                }}
+              >
+                <Users className="h-4 w-4" />
+                Switch role
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

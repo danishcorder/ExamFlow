@@ -24,9 +24,10 @@ import {
 } from '@/components/ui/table';
 import { PageHeader } from '@/components/app/page-header';
 import { RoleGuard } from '@/components/app/role-guard';
-import { EmptyState, ErrorState, LoadingState } from '@/components/app/states';
+import { EmptyState, ErrorState, LoadingState, DisabledInLocalModeCard } from '@/components/app/states';
 import { StatusPill } from '@/components/app/status-pill';
 import { useAuth } from '@/lib/auth';
+import { AUTH_MODE } from '@/lib/auth-mode';
 import {
   createManagedAccountFn,
   resetManagedAccountPasswordFn,
@@ -63,11 +64,12 @@ function AccountsPage() {
 
   const platformQuery = useQuery({
     queryKey: ['platform-overview', user?.id],
-    enabled: Boolean(user && isPlatformAdmin),
+    enabled: AUTH_MODE === 'supabase' && Boolean(user && isPlatformAdmin),
     queryFn: async () => getPlatformOverviewFn({ headers: authHeaders() }),
   });
 
   useEffect(() => {
+    if (AUTH_MODE === 'none') return;
     if (!isPlatformAdmin && activeInstitutionId) {
       setSelectedInstitutionId(activeInstitutionId);
       return;
@@ -81,7 +83,7 @@ function AccountsPage() {
   const institutionId = isPlatformAdmin ? selectedInstitutionId : activeInstitutionId ?? '';
   const institutionQuery = useQuery({
     queryKey: ['institution-workspace', institutionId, user?.id],
-    enabled: Boolean(user && institutionId),
+    enabled: AUTH_MODE === 'supabase' && Boolean(user && institutionId),
     queryFn: async () =>
       getInstitutionWorkspaceFn({
         data: { institutionId },
@@ -164,6 +166,18 @@ function AccountsPage() {
   const selectedInstitution = isPlatformAdmin
     ? platformQuery.data?.institutions.find((item) => item.id === institutionId)
     : activeMembership?.institution;
+
+  if (AUTH_MODE === 'none') {
+    return (
+      <>
+        <PageHeader
+          title="Manage accounts"
+          description="Create teacher and student accounts and issue temporary passwords."
+        />
+        <DisabledInLocalModeCard feature="Managed accounts" />
+      </>
+    );
+  }
 
   return (
     <RoleGuard allowedRoles={['institution', 'super-admin']}>

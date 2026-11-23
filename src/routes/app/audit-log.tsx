@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/app/page-header';
 import { RoleGuard } from '@/components/app/role-guard';
 import { EmptyState, ErrorState, LoadingState } from '@/components/app/states';
 import { useAuth } from '@/lib/auth';
-import { searchAuditLogsFn } from '@/lib/audit.functions';
+import { dataRepository } from '@/lib/data-repository';
 import { AUDIT_CSV_HEADERS, auditEntriesToCsvRows } from '@/lib/audit.shared';
 import { downloadCsv } from '@/lib/csv';
 
@@ -50,7 +50,7 @@ function AuditLogPage() {
       if (!activeInstitutionId) throw new Error('No active institution');
       const f = dayStartIso(from);
       const t = dayEndIso(to);
-      return searchAuditLogsFn({
+      return dataRepository.searchAuditLogs({
         data: {
           institutionId: activeInstitutionId,
           ...(search.trim() ? { search: search.trim() } : {}),

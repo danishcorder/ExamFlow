@@ -10,10 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/app/page-header';
 import { FieldError } from '@/components/app/auth-layout';
-import { EmptyState, ErrorState, LoadingState } from '@/components/app/states';
+import { EmptyState, ErrorState, LoadingState, DisabledInLocalModeCard } from '@/components/app/states';
 import { StatusPill } from '@/components/app/status-pill';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
+import { AUTH_MODE } from '@/lib/auth-mode';
 import { removeMembershipFn, updateProfileFn } from '@/lib/workspace.functions';
 import { INSTITUTION_ROLE_LABELS } from '@/lib/roles';
 
@@ -53,9 +53,10 @@ function SettingsPage() {
 
   const grantsQuery = useQuery({
     queryKey: ['oauth-grants', user?.id],
-    enabled: Boolean(user),
+    enabled: AUTH_MODE === 'supabase' && Boolean(user),
     retry: false,
     queryFn: async () => {
+      const { supabase } = await import('@/integrations/supabase/client');
       const { data, error } = await supabase.auth.oauth.listGrants();
       if (error) {
         const msg = error.message ?? '';
@@ -127,6 +128,7 @@ function SettingsPage() {
   async function onRevokeGrant(clientId: string, clientName: string) {
     setRevokingClientId(clientId);
     try {
+      const { supabase } = await import('@/integrations/supabase/client');
       const { error } = await supabase.auth.oauth.revokeGrant({ clientId });
       if (error) {
         throw new Error(error.message || 'Could not revoke application access');
@@ -138,6 +140,18 @@ function SettingsPage() {
     } finally {
       setRevokingClientId(null);
     }
+  }
+
+  if (AUTH_MODE === 'none') {
+    return (
+      <>
+        <PageHeader
+          title="Account settings"
+          description="Your verified profile, security controls, and institution memberships."
+        />
+        <DisabledInLocalModeCard feature="Account settings" />
+      </>
+    );
   }
 
   return (

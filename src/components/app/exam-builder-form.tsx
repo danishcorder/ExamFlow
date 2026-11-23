@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { createExamDraftFn, updateExamDraftFn } from '@/lib/exams.functions';
+import { dataRepository } from '@/lib/data-repository';
 import type { ExamBuilderCatalog, ExamDetail, SaveExamConfigInput } from '@/lib/exams.server';
 import { cn } from '@/lib/utils';
 
@@ -410,7 +410,7 @@ export function ExamBuilderForm({
       if (onSubmitOverride) {
         saved = await onSubmitOverride(payload);
       } else if (initialExam) {
-        saved = await updateExamDraftFn({
+        saved = await dataRepository.updateExamDraft({
           data: {
             ...payload,
             examId: initialExam.id,
@@ -418,7 +418,7 @@ export function ExamBuilderForm({
           headers: authHeaders(),
         });
       } else {
-        saved = await createExamDraftFn({
+        saved = await dataRepository.createExamDraft({
           data: payload,
           headers: authHeaders(),
         });

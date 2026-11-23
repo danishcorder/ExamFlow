@@ -25,7 +25,7 @@ import type {
   QuestionDifficulty,
   QuestionType,
 } from '@/integrations/supabase/types';
-import { listQuestionsFn } from '@/lib/question-bank.functions';
+import { dataRepository } from '@/lib/data-repository';
 import type { QuestionSetWithItems } from '@/lib/question-bank.server';
 
 const ALL = '__all__';
@@ -87,7 +87,7 @@ export function ExamQuestionPickerDialog({
     ],
     enabled: open && Boolean(institutionId),
     queryFn: async () =>
-      listQuestionsFn({
+      dataRepository.listQuestions({
         data: {
           institutionId,
           ...(search.trim() ? { search: search.trim() } : {}),

@@ -25,7 +25,8 @@ import { RoleGuard } from '@/components/app/role-guard';
 import { EmptyState, ErrorState, LoadingState } from '@/components/app/states';
 import { StatusPill } from '@/components/app/status-pill';
 import { useAuth } from '@/lib/auth';
-import { getAcademicCatalogFn, listTeachersFn } from '@/lib/academic.functions';
+import { AUTH_MODE } from '@/lib/auth-mode';
+import { dataRepository } from '@/lib/data-repository';
 import { INSTITUTION_ROLE_LABELS } from '@/lib/roles';
 
 export const Route = createFileRoute('/app/teachers')({
@@ -56,7 +57,7 @@ function TeachersPage() {
     enabled: Boolean(user && activeInstitutionId),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return getAcademicCatalogFn({
+      return dataRepository.getAcademicCatalog({
         data: { institutionId: activeInstitutionId },
         headers: authHeaders(),
       });
@@ -76,7 +77,7 @@ function TeachersPage() {
     enabled: Boolean(user && activeInstitutionId),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return listTeachersFn({
+      return dataRepository.listTeachers({
         data: {
           institutionId: activeInstitutionId,
           ...(search.trim() ? { search: search.trim() } : {}),
@@ -103,7 +104,7 @@ function TeachersPage() {
             : 'Institution teaching staff.'
         }
         actions={
-          isAdmin ? (
+          isAdmin && AUTH_MODE === 'supabase' ? (
             <Button asChild variant="outline">
               <Link to="/app/members">
                 <UserPlus className="h-4 w-4" />

@@ -32,13 +32,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth';
-import {
-  getStudentExamLobbyFn,
-  heartbeatExamAttemptFn,
-  saveExamAttemptAnswerFn,
-  startOrResumeExamAttemptFn,
-  submitExamAttemptFn,
-} from '@/lib/exam-engine.functions';
+import { dataRepository } from '@/lib/data-repository';
 import {
   isAnswerPopulated,
   type ExamAttemptSessionData,
@@ -234,7 +228,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
     setLoadError(null);
     try {
       const headers = authHeadersRef.current();
-      const lobbyData = await getStudentExamLobbyFn({
+      const lobbyData = await dataRepository.getStudentExamLobby({
         data: { institutionId: activeInstitutionId, examId },
         headers,
       });
@@ -242,7 +236,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
 
       // Automatically resume an in-progress or completed attempt on page refresh!
       if (lobbyData.canResume || lobbyData.isCompleted) {
-        const activeSession = await startOrResumeExamAttemptFn({
+        const activeSession = await dataRepository.startOrResumeExamAttempt({
           data: { institutionId: activeInstitutionId, examId },
           headers,
         });
@@ -294,7 +288,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
       setSyncErrorMsg(null);
 
       try {
-        const res = await saveExamAttemptAnswerFn({
+        const res = await dataRepository.saveExamAttemptAnswer({
           data: {
             institutionId: activeInstitutionId,
             attemptId: session.attempt.id,
@@ -438,7 +432,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
           idempotencyKeyRef.current = `sub-${session.attempt.id}-${Date.now()}`;
         }
 
-        const result = await submitExamAttemptFn({
+        const result = await dataRepository.submitExamAttempt({
           data: {
             institutionId: activeInstitutionId,
             attemptId: session.attempt.id,
@@ -500,7 +494,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
 
     const runHeartbeat = async () => {
       try {
-        const hb = await heartbeatExamAttemptFn({
+        const hb = await dataRepository.heartbeatExamAttempt({
           data: { institutionId: activeInstitutionId, attemptId: session.attempt.id },
           headers: authHeadersRef.current(),
         });
@@ -521,17 +515,58 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
       void runHeartbeat();
     }, 15_000);
 
+    let lastVisibilityEventAt = 0;
+    let lastBlurEventAt = 0;
+
+    const reportProctoringSignal = (
+      eventType: 'tab_visibility_hidden' | 'window_blur',
+    ) => {
+      void dataRepository
+        .recordProctoringEvent({
+          data: {
+            institutionId: activeInstitutionId,
+            attemptId: session.attempt.id,
+            studentId: session.attempt.studentId,
+            eventType,
+            severity: 'warning',
+            details: { timestamp: new Date().toISOString() },
+          },
+          headers: authHeadersRef.current(),
+        })
+        .catch(() => {
+          // Non-fatal: do not interrupt candidate exam flow
+        });
+    };
+
     const onVisibility = () => {
       if (document.visibilityState === 'visible') {
         void runHeartbeat();
+      } else if (document.visibilityState === 'hidden') {
+        const now = Date.now();
+        if (now - lastVisibilityEventAt > 2000) {
+          lastVisibilityEventAt = now;
+          reportProctoringSignal('tab_visibility_hidden');
+        }
       }
     };
+
+    const onWindowBlur = () => {
+      if (document.visibilityState === 'hidden') return;
+      const now = Date.now();
+      if (now - lastBlurEventAt > 2000) {
+        lastBlurEventAt = now;
+        reportProctoringSignal('window_blur');
+      }
+    };
+
     document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('blur', onWindowBlur);
 
     return () => {
       clearInterval(secInterval);
       clearInterval(hbInterval);
       document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('blur', onWindowBlur);
     };
   }, [
     activeInstitutionId,
@@ -540,6 +575,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
     session?.attempt.expiresAt,
     session?.attempt.id,
     session?.attempt.status,
+    session?.attempt.studentId,
   ]);
 
   // Clear pending debounce timers on unmount
@@ -555,7 +591,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
     if (!activeInstitutionId) return;
     setStarting(true);
     try {
-      const started = await startOrResumeExamAttemptFn({
+      const started = await dataRepository.startOrResumeExamAttempt({
         data: { institutionId: activeInstitutionId, examId },
         headers: authHeadersRef.current(),
       });

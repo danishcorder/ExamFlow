@@ -54,18 +54,7 @@ import type {
   QuestionStatus,
   QuestionType,
 } from '@/integrations/supabase/types';
-import {
-  deleteQuestionFn,
-  deleteQuestionSetFn,
-  duplicateQuestionFn,
-  getQuestionBankCatalogFn,
-  importQuestionsCsvFn,
-  listQuestionImportJobsFn,
-  listQuestionsFn,
-  listQuestionSetsFn,
-  removeQuestionFromSetFn,
-  setQuestionStatusFn,
-} from '@/lib/question-bank.functions';
+import { dataRepository } from '@/lib/data-repository';
 import type {
   EducatorQuestionItem,
   QuestionCsvImportSummary,
@@ -145,7 +134,7 @@ function QuestionBankPage() {
     enabled: Boolean(user && activeInstitutionId),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return getQuestionBankCatalogFn({
+      return dataRepository.getQuestionBankCatalog({
         data: { institutionId: activeInstitutionId },
         headers: authHeaders(),
       });
@@ -169,7 +158,7 @@ function QuestionBankPage() {
     enabled: Boolean(user && activeInstitutionId),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return listQuestionsFn({
+      return dataRepository.listQuestions({
         data: {
           institutionId: activeInstitutionId,
           ...(search.trim() ? { search: search.trim() } : {}),
@@ -192,7 +181,7 @@ function QuestionBankPage() {
     enabled: Boolean(user && activeInstitutionId),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return listQuestionSetsFn({
+      return dataRepository.listQuestionSets({
         data: { institutionId: activeInstitutionId },
         headers: authHeaders(),
       });
@@ -204,7 +193,7 @@ function QuestionBankPage() {
     enabled: Boolean(user && activeInstitutionId),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
-      return listQuestionImportJobsFn({
+      return dataRepository.listQuestionImportJobs({
         data: { institutionId: activeInstitutionId },
         headers: authHeaders(),
       });
@@ -256,7 +245,7 @@ function QuestionBankPage() {
   async function handleDuplicate(questionId: string) {
     if (!activeInstitutionId) return;
     try {
-      await duplicateQuestionFn({
+      await dataRepository.duplicateQuestion({
         data: { institutionId: activeInstitutionId, questionId },
         headers: authHeaders(),
       });
@@ -270,7 +259,7 @@ function QuestionBankPage() {
   async function handleSetStatus(questionId: string, nextStatus: QuestionStatus) {
     if (!activeInstitutionId) return;
     try {
-      await setQuestionStatusFn({
+      await dataRepository.setQuestionStatus({
         data: { institutionId: activeInstitutionId, questionId, status: nextStatus },
         headers: authHeaders(),
       });
@@ -290,7 +279,7 @@ function QuestionBankPage() {
   async function handleDelete(questionId: string) {
     if (!activeInstitutionId) return;
     try {
-      await deleteQuestionFn({
+      await dataRepository.deleteQuestion({
         data: { institutionId: activeInstitutionId, questionId },
         headers: authHeaders(),
       });
@@ -332,7 +321,7 @@ function QuestionBankPage() {
     if (!activeInstitutionId || !csvText.trim()) return;
     setImporting(true);
     try {
-      const summary = await importQuestionsCsvFn({
+      const summary = await dataRepository.importQuestionsCsv({
         data: {
           institutionId: activeInstitutionId,
           fileName: csvFileName || 'questions.csv',
@@ -356,7 +345,7 @@ function QuestionBankPage() {
   async function handleRemoveSetItem(itemId: string) {
     if (!activeInstitutionId) return;
     try {
-      await removeQuestionFromSetFn({
+      await dataRepository.removeQuestionFromSet({
         data: { institutionId: activeInstitutionId, itemId },
         headers: authHeaders(),
       });
@@ -370,7 +359,7 @@ function QuestionBankPage() {
   async function handleDeleteSet(setId: string) {
     if (!activeInstitutionId) return;
     try {
-      await deleteQuestionSetFn({
+      await dataRepository.deleteQuestionSet({
         data: { institutionId: activeInstitutionId, questionSetId: setId },
         headers: authHeaders(),
       });

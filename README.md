@@ -17,6 +17,7 @@ ExamFlow is a commercial, multi-tenant examination and assessment platform desig
 2. [Tech Stack](#tech-stack)
 3. [Prerequisites](#prerequisites)
 4. [Local Development Setup](#local-development-setup)
+   - [Running in No-Login Mode (Standalone Browser Demo)](#running-in-no-login-mode-standalone-browser-demo)
 5. [Database Setup & Migrations](#database-setup--migrations)
 6. [Complete Operational Walkthrough](#complete-operational-walkthrough)
    - [1. Institution & Admin Setup](#1-institution--admin-setup)
@@ -135,6 +136,30 @@ VITE_SUPABASE_PROJECT_ID="your-project-id"
 ```
 
 > **Security Note**: Never expose `SUPABASE_SERVICE_ROLE_KEY` to frontend code or commit `.env` to GitHub.
+
+### Running in No-Login Mode (Standalone Browser Demo)
+
+ExamFlow includes an optional build-time **No-Login Mode** controlled by `VITE_AUTH_MODE`:
+
+- `VITE_AUTH_MODE=supabase` *(default)*: Full multi-tenant Supabase Auth + PostgreSQL RLS + server-side authorization.
+- `VITE_AUTH_MODE=none`: Standalone single-browser mode with **no sign-in** and **zero Supabase client initialization or database network calls**.
+
+To run locally without a Supabase project:
+```bash
+VITE_AUTH_MODE=none npm run dev
+```
+Or build for static/standalone deployment:
+```bash
+VITE_AUTH_MODE=none npm run build
+```
+
+When `VITE_AUTH_MODE=none` is active:
+1. Opening the app goes straight to `/app` with a **Role Picker** (`Institution Admin`, `Teacher / Examiner`, `Student`, `Invigilator`).
+2. A permanent warning banner appears at the top of the UI: `"Local mode: no login. Data stays in this browser only. Not for real examinations."`
+3. All academics, question bank items, exams, attempts, proctoring events, grading, report cards, and audit logs are stored in browser `localStorage` with schema versioning (`examflow:local-data`, schema v2, auto-migrated across versions) and pre-seeded with a labelled sample dataset.
+4. Top-bar controls let you **Switch role**, **Reset sample data**, **Export JSON** (backup), or **Import JSON** (restore).
+5. Account management, invitations, password flows, and SaaS billing routes are safely disabled in local mode.
+6. Remove `VITE_AUTH_MODE=none` (or set `VITE_AUTH_MODE=supabase`) and rebuild to turn real Supabase authentication back on.
 
 ---
 

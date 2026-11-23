@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { CourseStatus } from '@/integrations/supabase/types';
-import { addQuestionsToSetFn, createQuestionSetFn } from '@/lib/question-bank.functions';
+import { dataRepository } from '@/lib/data-repository';
 import type {
   EducatorQuestionItem,
   QuestionSetWithItems,
@@ -68,7 +68,7 @@ export function QuestionSelectionTray({
     setBusy(true);
     try {
       if (mode === 'new') {
-        await createQuestionSetFn({
+        await dataRepository.createQuestionSet({
           data: {
             institutionId,
             title: title.trim(),
@@ -85,7 +85,7 @@ export function QuestionSelectionTray({
           setBusy(false);
           return;
         }
-        const res = await addQuestionsToSetFn({
+        const res = await dataRepository.addQuestionsToSet({
           data: {
             institutionId,
             questionSetId: targetSetId,

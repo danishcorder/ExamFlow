@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { previewExamFn } from '@/lib/exams.functions';
+import { dataRepository } from '@/lib/data-repository';
 
 export function ExamPreviewDialog({
   open,
@@ -40,7 +40,7 @@ export function ExamPreviewDialog({
     enabled: open && Boolean(institutionId && examId),
     queryFn: async () => {
       if (!examId) throw new Error('Missing exam ID');
-      return previewExamFn({
+      return dataRepository.previewExam({
         data: { institutionId, examId, mode },
         headers: authHeaders(),
       });

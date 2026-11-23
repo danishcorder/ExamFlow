@@ -7,9 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/app/page-header';
-import { EmptyState, ErrorState } from '@/components/app/states';
+import { EmptyState, ErrorState, DisabledInLocalModeCard } from '@/components/app/states';
 import { StatusPill } from '@/components/app/status-pill';
 import { useAuth } from '@/lib/auth';
+import { AUTH_MODE } from '@/lib/auth-mode';
 import { acceptInvitationFn } from '@/lib/workspace.functions';
 import { dbRoleToRoleKey, INSTITUTION_ROLE_LABELS, ROLES } from '@/lib/roles';
 
@@ -62,6 +63,18 @@ function InvitationsPage() {
   function onSubmitToken(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     void acceptToken(tokenInput);
+  }
+
+  if (AUTH_MODE === 'none') {
+    return (
+      <>
+        <PageHeader
+          title="Institution invitations"
+          description="Accept an invitation sent to your verified email address."
+        />
+        <DisabledInLocalModeCard feature="Invitations" />
+      </>
+    );
   }
 
   return (

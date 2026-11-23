@@ -16,10 +16,11 @@ import {
 import { PageHeader } from '@/components/app/page-header';
 import { RoleGuard } from '@/components/app/role-guard';
 import { StatCard } from '@/components/app/stat-card';
-import { EmptyState, ErrorState, LoadingState } from '@/components/app/states';
+import { EmptyState, ErrorState, LoadingState, DisabledInLocalModeCard } from '@/components/app/states';
 import { StatusPill } from '@/components/app/status-pill';
 import { InstitutionProvisioningPanel } from '@/components/app/institution-provisioning-panel';
 import { useAuth } from '@/lib/auth';
+import { AUTH_MODE } from '@/lib/auth-mode';
 import { getPlatformOverviewFn, updateInstitutionStatusFn } from '@/lib/workspace.functions';
 import type { InstitutionStatus } from '@/integrations/supabase/types';
 
@@ -40,7 +41,7 @@ function SuperAdminPage() {
 
   const overviewQuery = useQuery({
     queryKey: ['platform-overview', user?.id],
-    enabled: Boolean(user),
+    enabled: AUTH_MODE === 'supabase' && Boolean(user),
     queryFn: async () => getPlatformOverviewFn({ headers: authHeaders() }),
   });
 
@@ -62,6 +63,18 @@ function SuperAdminPage() {
   }
 
   const data = overviewQuery.data;
+
+  if (AUTH_MODE === 'none') {
+    return (
+      <>
+        <PageHeader
+          title="Platform Super Admin"
+          description="Verified platform-level governance across registered institutions."
+        />
+        <DisabledInLocalModeCard feature="Platform Super Admin" />
+      </>
+    );
+  }
 
   return (
     <RoleGuard requiredRole="super-admin">

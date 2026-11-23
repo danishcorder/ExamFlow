@@ -26,9 +26,10 @@ import {
 import { PageHeader } from '@/components/app/page-header';
 import { FieldError } from '@/components/app/auth-layout';
 import { RoleGuard } from '@/components/app/role-guard';
-import { EmptyState, ErrorState, LoadingState } from '@/components/app/states';
+import { EmptyState, ErrorState, LoadingState, DisabledInLocalModeCard } from '@/components/app/states';
 import { StatusPill } from '@/components/app/status-pill';
 import { useAuth } from '@/lib/auth';
+import { AUTH_MODE } from '@/lib/auth-mode';
 import {
   getInstitutionWorkspaceFn,
   inviteMemberFn,
@@ -67,7 +68,7 @@ function MembersPage() {
 
   const workspaceQuery = useQuery({
     queryKey: ['institution-workspace', activeInstitutionId, user?.id],
-    enabled: Boolean(user && activeInstitutionId),
+    enabled: AUTH_MODE === 'supabase' && Boolean(user && activeInstitutionId),
     queryFn: async () => {
       if (!activeInstitutionId) throw new Error('No active institution');
       return getInstitutionWorkspaceFn({
@@ -182,6 +183,18 @@ function MembersPage() {
   }
 
   const data = workspaceQuery.data;
+
+  if (AUTH_MODE === 'none') {
+    return (
+      <>
+        <PageHeader
+          title="Members & invitations"
+          description="Manage institution members, roles, and pending email invitations."
+        />
+        <DisabledInLocalModeCard feature="Members & invitations" />
+      </>
+    );
+  }
 
   return (
     <RoleGuard requiredRole="institution">

@@ -38,6 +38,8 @@ describe('local repository', () => {
     for (const collection of LOCAL_COLLECTIONS) {
       expect(Array.isArray(migrated.data[collection])).toBe(true);
     }
+    expect(Array.isArray(migrated.aux.proctoringEvents)).toBe(true);
+    expect(Array.isArray(migrated.aux.examVersions)).toBe(true);
   });
 
   it('seeds and restores the labelled sample dataset', () => {
@@ -49,6 +51,8 @@ describe('local repository', () => {
     expect(repository.get('students', 'student-extra')).toBeNull();
     expect(repository.list('exams')).toHaveLength(2);
     expect(repository.list('teachers').length).toBeGreaterThan(0);
+    expect(reset.aux.proctoringEvents.length).toBeGreaterThan(0);
+    expect(reset.aux.examVersions.length).toBe(2);
   });
 
   it('exports and imports a validated JSON backup', () => {

@@ -5,5 +5,5 @@ export function resolveAuthMode(value: string | undefined): AuthMode {
   return value === 'none' ? 'none' : 'supabase';
 }
 
-export const AUTH_MODE: AuthMode = resolveAuthMode(import.meta.env.VITE_AUTH_MODE);
+export const AUTH_MODE: AuthMode = resolveAuthMode((import.meta.env as Record<string, string | undefined>)['VITE_AUTH_MODE']);
 export const isNoLoginMode = AUTH_MODE === 'none';

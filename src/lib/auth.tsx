@@ -14,8 +14,9 @@ import type {
   MembershipWithInstitution,
   WorkspaceBootstrap,
 } from '@/lib/workspace.server';
-import { dbRoleToRoleKey, type RoleKey } from '@/lib/roles';
+import { dbRoleToRoleKey, roleKeyToDbRole, type RoleKey } from '@/lib/roles';
 import { AUTH_MODE } from '@/lib/auth-mode';
+import { localRepository, type LocalRole } from '@/lib/local-repository';
 
 type AuthState = {
   user: User | null;
@@ -31,16 +32,149 @@ type AuthState = {
   activeRoleKey: RoleKey | null;
   setActiveInstitutionId: (institutionId: string) => void;
   refreshWorkspace: () => Promise<void>;
+  localRole: LocalRole | null;
+  setLocalRole: (role: LocalRole | null) => void;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
 
 const ACTIVE_INST_STORAGE_PREFIX = 'examflow.active_institution.';
+const LOCAL_ROLE_STORAGE_KEY = 'examflow:local-role';
+
+function isValidLocalRole(value: unknown): value is LocalRole {
+  return value === 'institution' || value === 'teacher' || value === 'student' || value === 'invigilator';
+}
+
+function readStoredLocalRole(): LocalRole | null {
+  if (AUTH_MODE !== 'none' || typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(LOCAL_ROLE_STORAGE_KEY);
+    return isValidLocalRole(raw) ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
+function buildLocalAuthState(localRole: LocalRole | null): {
+  user: User | null;
+  workspace: WorkspaceBootstrap | null;
+  activeInstitutionId: string | null;
+  activeMembership: MembershipWithInstitution | null;
+  activeRoleKey: RoleKey | null;
+} {
+  if (!localRole) {
+    return {
+      user: null,
+      workspace: null,
+      activeInstitutionId: null,
+      activeMembership: null,
+      activeRoleKey: null,
+    };
+  }
+
+  const snap = localRepository.read();
+  const rawInst = snap.data.institution[0];
+  const now = new Date().toISOString();
+  const institutionId = rawInst?.id ?? 'inst-local';
+  const institutionName =
+    typeof rawInst?.['name'] === 'string' && rawInst['name'].trim()
+      ? rawInst['name']
+      : 'Riverside College (sample)';
+  const institutionSlug =
+    typeof rawInst?.['slug'] === 'string' && rawInst['slug'].trim()
+      ? rawInst['slug']
+      : 'riverside-sample';
+  const institutionType =
+    rawInst?.['institution_type'] === 'school' ||
+    rawInst?.['institution_type'] === 'college' ||
+    rawInst?.['institution_type'] === 'university' ||
+    rawInst?.['institution_type'] === 'training_centre'
+      ? rawInst['institution_type']
+      : 'college';
+
+  const dbRole = roleKeyToDbRole(localRole) ?? 'institution_admin';
+  const matchingMember =
+    snap.data.members.find((m) => m['role'] === dbRole) ??
+    snap.data.members.find((m) => m['role'] === localRole) ??
+    snap.data.members[0];
+
+  const userId =
+    typeof matchingMember?.['userId'] === 'string'
+      ? matchingMember['userId']
+      : `local-user-${localRole}`;
+  const fullName =
+    typeof matchingMember?.['name'] === 'string'
+      ? matchingMember['name']
+      : `Local ${localRole}`;
+  const email =
+    typeof matchingMember?.['email'] === 'string'
+      ? matchingMember['email']
+      : `${localRole}@local.example`;
+  const membershipId = matchingMember?.id ?? `member-local-${localRole}`;
+
+  const institution: MembershipWithInstitution['institution'] = {
+    id: institutionId,
+    name: institutionName,
+    slug: institutionSlug,
+    institution_type: institutionType,
+    status: 'active',
+    created_by: typeof rawInst?.['created_by'] === 'string' ? rawInst['created_by'] : 'local-user-institution',
+    created_at: typeof rawInst?.['created_at'] === 'string' ? rawInst['created_at'] : now,
+    updated_at: typeof rawInst?.['updated_at'] === 'string' ? rawInst['updated_at'] : now,
+  };
+
+  const membership: MembershipWithInstitution = {
+    id: membershipId,
+    institution_id: institutionId,
+    user_id: userId,
+    role: dbRole,
+    status: 'active',
+    invited_by: null,
+    created_at: now,
+    updated_at: now,
+    institution,
+  };
+
+  const workspace: WorkspaceBootstrap = {
+    profile: {
+      id: userId,
+      email,
+      full_name: fullName,
+      phone: null,
+      timezone: 'UTC',
+      avatar_url: null,
+      created_at: now,
+      updated_at: now,
+    },
+    isSuperAdmin: false,
+    memberships: [membership],
+    pendingInvitations: [],
+  };
+
+  const user = {
+    id: userId,
+    app_metadata: {},
+    user_metadata: { full_name: fullName },
+    aud: 'authenticated',
+    created_at: now,
+    email,
+  } as User;
+
+  return {
+    user,
+    workspace,
+    activeInstitutionId: institutionId,
+    activeMembership: membership,
+    activeRoleKey: localRole,
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(AUTH_MODE !== 'none');
   const [selectedInstitutionId, setSelectedInstitutionId] = useState<string | null>(null);
+  const [localRole, setLocalRoleState] = useState<LocalRole | null>(() => readStoredLocalRole());
+  const [localRevision, setLocalRevision] = useState(0);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -87,11 +221,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [queryClient]);
 
-  const user = session?.user ?? null;
-  const accessToken = session?.access_token ?? null;
+  const setLocalRole = useCallback(
+    (role: LocalRole | null) => {
+      if (AUTH_MODE !== 'none') return;
+      setLocalRoleState(role);
+      if (typeof window !== 'undefined') {
+        try {
+          if (role) {
+            window.sessionStorage.setItem(LOCAL_ROLE_STORAGE_KEY, role);
+          } else {
+            window.sessionStorage.removeItem(LOCAL_ROLE_STORAGE_KEY);
+          }
+        } catch {
+          // Ignore storage restrictions
+        }
+      }
+      queryClient.clear();
+    },
+    [queryClient],
+  );
+
+  const localAuth = useMemo(() => {
+    if (AUTH_MODE !== 'none') return null;
+    void localRevision;
+    return buildLocalAuthState(localRole);
+  }, [localRole, localRevision]);
+
+  const user = AUTH_MODE === 'none' ? (localAuth?.user ?? null) : (session?.user ?? null);
+  const accessToken = AUTH_MODE === 'none' ? null : (session?.access_token ?? null);
 
   const authHeaders = useCallback((): Record<string, string> => {
-    if (!accessToken) return {};
+    if (AUTH_MODE === 'none' || !accessToken) return {};
     return { Authorization: `Bearer ${accessToken}` };
   }, [accessToken]);
 
@@ -108,7 +268,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const workspace = bootstrapQuery.data ?? null;
+  const workspace =
+    AUTH_MODE === 'none' ? (localAuth?.workspace ?? null) : (bootstrapQuery.data ?? null);
 
   useEffect(() => {
     if (AUTH_MODE === 'none' || !user || !workspace) return;
@@ -140,37 +301,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const activeMembership = useMemo(() => {
+    if (AUTH_MODE === 'none') return localAuth?.activeMembership ?? null;
     if (!workspace) return null;
     if (selectedInstitutionId) {
       const found = workspace.memberships.find((membership) => membership.institution_id === selectedInstitutionId);
       if (found) return found;
     }
     return workspace.memberships[0] ?? null;
-  }, [workspace, selectedInstitutionId]);
+  }, [localAuth, workspace, selectedInstitutionId]);
 
-  const activeInstitutionId = activeMembership?.institution_id ?? null;
+  const activeInstitutionId =
+    AUTH_MODE === 'none'
+      ? (localAuth?.activeInstitutionId ?? null)
+      : (activeMembership?.institution_id ?? null);
 
   const activeRoleKey: RoleKey | null = useMemo(() => {
+    if (AUTH_MODE === 'none') return localAuth?.activeRoleKey ?? null;
     if (activeMembership) return dbRoleToRoleKey(activeMembership.role);
     if (workspace?.isSuperAdmin) return 'super-admin';
     return null;
-  }, [activeMembership, workspace]);
+  }, [localAuth, activeMembership, workspace]);
 
   const refreshWorkspace = useCallback(async () => {
-    if (AUTH_MODE === 'none') return;
+    if (AUTH_MODE === 'none') {
+      setLocalRevision((rev) => rev + 1);
+      await queryClient.invalidateQueries();
+      return;
+    }
     await queryClient.invalidateQueries({ queryKey: ['workspace-bootstrap', user?.id] });
     await queryClient.invalidateQueries({ queryKey: ['institution-workspace'] });
     await queryClient.invalidateQueries({ queryKey: ['platform-overview'] });
   }, [queryClient, user?.id]);
 
   const signOut = useCallback(async () => {
-    if (AUTH_MODE === 'supabase') {
-      const { isSupabaseConfigured, supabase } = await import('@/integrations/supabase/client');
-      if (isSupabaseConfigured) await supabase.auth.signOut();
+    if (AUTH_MODE === 'none') {
+      setLocalRole(null);
+      return;
     }
+    const { isSupabaseConfigured, supabase } = await import('@/integrations/supabase/client');
+    if (isSupabaseConfigured) await supabase.auth.signOut();
     setSelectedInstitutionId(null);
     queryClient.clear();
-  }, [queryClient]);
+  }, [queryClient, setLocalRole]);
 
   const workspaceError = bootstrapQuery.error
     ? bootstrapQuery.error instanceof Error
@@ -194,6 +366,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         activeRoleKey,
         setActiveInstitutionId,
         refreshWorkspace,
+        localRole,
+        setLocalRole,
       }}
     >
       {children}

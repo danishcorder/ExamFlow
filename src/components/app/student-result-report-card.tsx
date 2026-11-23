@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { EmptyState, ErrorState, LoadingState } from './states';
 import { StatusPill } from './status-pill';
 import { useAuth } from '@/lib/auth';
-import { getStudentResultReportFn } from '@/lib/grading.functions';
+import { dataRepository } from '@/lib/data-repository';
 import type { StudentResultReport } from '@/lib/grading.shared';
 import { downloadCsv } from '@/lib/csv';
 
@@ -20,7 +20,7 @@ export function StudentResultReportCard({ institutionId, examId }: StudentResult
 
   const reportQuery = useQuery({
     queryKey: ['student-result-report', institutionId, examId],
-    queryFn: async () => getStudentResultReportFn({ data: { institutionId, examId }, headers: authHeaders() }),
+    queryFn: async () => dataRepository.getStudentResultReport({ data: { institutionId, examId }, headers: authHeaders() }),
   });
 
   const report = reportQuery.data as StudentResultReport | null;
