@@ -45,3 +45,11 @@ export function describeSupabaseEnvProblems(rawUrl: unknown, rawKey: unknown): E
   else if (!isValidHeaderToken(key)) out.push({ name: 'VITE_SUPABASE_PUBLISHABLE_KEY', reason: 'contains spaces or unsupported characters' });
   return out;
 }
+
+/** True when PostgREST/Auth rejected the API key itself (misconfiguration), not the user's credentials. */
+export function isInvalidApiKeyError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const e = error as { status?: number; code?: string; message?: string; hint?: string };
+  const text = `${e.message ?? ''} ${e.hint ?? ''} ${e.code ?? ''}`.toLowerCase();
+  return e.status === 401 || e.status === 403 || /invalid api key|unauthorized_invalid_api_key|jwt|apikey/.test(text);
+}
