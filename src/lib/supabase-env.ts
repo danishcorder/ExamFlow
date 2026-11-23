@@ -31,3 +31,17 @@ export function findBadSupabaseEnv(url: string | undefined, key: string | undefi
     ...(isValidHeaderToken(key) ? [] : ['VITE_SUPABASE_PUBLISHABLE_KEY']),
   ];
 }
+
+export type EnvProblem = { name: string; reason: 'not set or empty' | 'contains spaces or unsupported characters' | 'is not a valid https URL' };
+
+/** Explains WHY each variable is unusable, without ever echoing its value. */
+export function describeSupabaseEnvProblems(rawUrl: unknown, rawKey: unknown): EnvProblem[] {
+  const out: EnvProblem[] = [];
+  const url = cleanEnvValue(rawUrl);
+  const key = cleanEnvValue(rawKey);
+  if (!url) out.push({ name: 'VITE_SUPABASE_URL', reason: 'not set or empty' });
+  else if (!isValidHttpUrl(url)) out.push({ name: 'VITE_SUPABASE_URL', reason: 'is not a valid https URL' });
+  if (!key) out.push({ name: 'VITE_SUPABASE_PUBLISHABLE_KEY', reason: 'not set or empty' });
+  else if (!isValidHeaderToken(key)) out.push({ name: 'VITE_SUPABASE_PUBLISHABLE_KEY', reason: 'contains spaces or unsupported characters' });
+  return out;
+}
